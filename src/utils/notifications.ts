@@ -1,0 +1,86 @@
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+import { usersApi } from '../api/users';
+
+// Configure notification handler (how notifications appear when app is in foreground)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+export async function registerForPushNotifications(): Promise<string | null> {
+  try {
+    if (!Device.isDevice) {
+      console.warn('Push notifications require a physical device');
+      return null;
+    }
+
+    // Check if project ID is available (requires EAS/Firebase setup)
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      console.warn('No EAS projectId configured — skipping push notification registration');
+      return null;
+    }
+
+    // Check existing permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    // Request permissions if not granted
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.warn('Push notification permission not granted');
+      return null;
+    }
+
+    // Get the Expo push token
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+
+    // Set up Android notification channel
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF6B35',
+      });
+    }
+
+    return tokenData.data;
+  } catch (error) {
+    console.warn('Push notification setup failed (this is OK during local dev):', error);
+    return null;
+  }
+}
+
+export async function registerTokenWithBackend(token: string): Promise<void> {
+  try {
+    await usersApi.updateFcmToken({ fcmToken: token });
+  } catch (error) {
+    console.error('Failed to register push token with backend:', error);
+  }
+}
+
+// Notification event listeners
+export function addNotificationReceivedListener(
+  callback: (notification: Notifications.Notification) => void,
+) {
+  return Notifications.addNotificationReceivedListener(callback);
+}
+
+export function addNotificationResponseListener(
+  callback: (response: Notifications.NotificationResponse) => void,
+) {
+  return Notifications.addNotificationResponseReceivedListener(callback);
+}
