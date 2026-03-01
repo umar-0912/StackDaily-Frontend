@@ -1,5 +1,11 @@
 import { apiClient } from './client';
 
+export interface AiAnswerMcq {
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
 export interface AiAnswer {
   _id: string;
   questionId: string;
@@ -7,6 +13,7 @@ export interface AiAnswer {
   generatedAt: string;
   model: string;
   tokenCount?: number;
+  mcqs?: AiAnswerMcq[];
 }
 
 export const aiAnswersApi = {

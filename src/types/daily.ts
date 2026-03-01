@@ -10,9 +10,16 @@ export interface FeedQuestion {
   tags: string[];
 }
 
+export interface FeedMcq {
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
 export interface FeedAnswer {
   content: string;
   generatedAt: string;
+  mcqs?: FeedMcq[];
 }
 
 export interface DailyFeedItem {

@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import {
   View,
   StyleSheet,
@@ -30,11 +31,13 @@ import { z } from 'zod';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
-import { useProfile, useUpdateProfile } from '../../src/hooks/useProfile';
+import { useProfile, useUpdateProfile, useSubscriptionInfo } from '../../src/hooks/useProfile';
+import { useSubscribe, useCancelSubscription } from '../../src/hooks/usePayments';
 import { useNotificationHistory } from '../../src/hooks/useNotifications';
 import { notificationsApi } from '../../src/api/notifications';
 import { QUERY_KEYS } from '../../src/utils/constants';
 import { LoadingScreen, ErrorScreen, StreakBadge, TopicChip } from '../../src/components';
+import { SubscriptionPlan, SubscriptionStatus } from '../../src/types';
 import type { NotificationStatus } from '../../src/types';
 
 const editProfileSchema = z.object({
@@ -111,8 +114,13 @@ export default function ProfileScreen() {
   const { data: notificationsData, isFetching: isNotificationsFetching } =
     useNotificationHistory(notificationPage);
 
+  const { data: subscriptionInfo } = useSubscriptionInfo();
+  const subscribeMutation = useSubscribe();
+  const cancelSubscriptionMutation = useCancelSubscription();
+
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
+  const [cancelSubDialogVisible, setCancelSubDialogVisible] = useState(false);
   const [notificationsExpanded, setNotificationsExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -189,13 +197,31 @@ export default function ProfileScreen() {
     },
   });
 
-  // Fix 2: Pull-to-refresh
+  // Refresh subscription status when app comes back to foreground
+  // (e.g. after completing Razorpay checkout in browser)
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.subscription] });
+        queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
+      }
+      appState.current = nextAppState;
+    });
+    return () => subscription.remove();
+  }, [queryClient]);
+
+  // Pull-to-refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setNotificationPage(1);
     try {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.profile }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notificationHistory }),
       ]);
     } finally {
@@ -316,6 +342,122 @@ export default function ProfileScreen() {
           <Text variant="bodySmall" style={[styles.lastActive, { color: theme.colors.onSurfaceVariant }]}>
             {getLastActiveText(displayUser?.streak.lastActiveDate ?? null)}
           </Text>
+        </Surface>
+
+        {/* Subscription Section */}
+        <Surface style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]} elevation={1}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Subscription
+          </Text>
+
+          <View style={styles.planBadgeRow}>
+            <View
+              style={[
+                styles.planBadge,
+                {
+                  backgroundColor:
+                    subscriptionInfo?.plan === SubscriptionPlan.PRO
+                      ? theme.colors.primary
+                      : theme.colors.surfaceVariant,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name={
+                  subscriptionInfo?.plan === SubscriptionPlan.PRO
+                    ? 'crown'
+                    : 'account-outline'
+                }
+                size={18}
+                color={
+                  subscriptionInfo?.plan === SubscriptionPlan.PRO
+                    ? '#fff'
+                    : theme.colors.onSurfaceVariant
+                }
+              />
+              <Text
+                variant="labelLarge"
+                style={{
+                  color:
+                    subscriptionInfo?.plan === SubscriptionPlan.PRO
+                      ? '#fff'
+                      : theme.colors.onSurfaceVariant,
+                  marginLeft: 6,
+                }}
+              >
+                {subscriptionInfo?.plan === SubscriptionPlan.PRO
+                  ? 'Pro Plan'
+                  : 'Free Plan'}
+              </Text>
+            </View>
+          </View>
+
+          {subscriptionInfo?.plan === SubscriptionPlan.PRO ? (
+            <View style={styles.planDetails}>
+              <Text
+                variant="bodyMedium"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                Unlimited topics
+                {subscriptionInfo.daysRemaining !== null
+                  ? ` \u00B7 ${subscriptionInfo.daysRemaining} days remaining`
+                  : ''}
+              </Text>
+              {subscriptionInfo.status === SubscriptionStatus.CANCELLED && (
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.error, marginTop: 4 }}
+                >
+                  Cancellation pending. Access continues until period ends.
+                </Text>
+              )}
+              {subscriptionInfo.status === SubscriptionStatus.ACTIVE && (
+                <Button
+                  mode="outlined"
+                  onPress={() => setCancelSubDialogVisible(true)}
+                  style={[
+                    styles.cancelSubButton,
+                    { borderColor: theme.colors.error },
+                  ]}
+                  textColor={theme.colors.error}
+                  compact
+                  icon="close-circle-outline"
+                  loading={cancelSubscriptionMutation.isPending}
+                  disabled={cancelSubscriptionMutation.isPending}
+                >
+                  Cancel Subscription
+                </Button>
+              )}
+            </View>
+          ) : (
+            <View style={styles.planDetails}>
+              <Text
+                variant="bodyMedium"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                Up to {subscriptionInfo?.maxTopics ?? 3} topics
+              </Text>
+              <Text
+                variant="bodySmall"
+                style={{
+                  color: theme.colors.onSurfaceVariant,
+                  marginTop: 4,
+                }}
+              >
+                Upgrade to Pro for unlimited topics at just Rs.30/month
+              </Text>
+              <Button
+                mode="contained"
+                onPress={() => subscribeMutation.mutate()}
+                style={styles.upgradeButton}
+                icon="crown"
+                loading={subscribeMutation.isPending}
+                disabled={subscribeMutation.isPending}
+              >
+                Upgrade to Pro
+              </Button>
+            </View>
+          )}
         </Surface>
 
         {/* Subscribed Topics */}
@@ -583,6 +725,47 @@ export default function ProfileScreen() {
         </Dialog>
       </Portal>
 
+      {/* Cancel Subscription Dialog */}
+      <Portal>
+        <Dialog
+          visible={cancelSubDialogVisible}
+          onDismiss={() => setCancelSubDialogVisible(false)}
+        >
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={styles.dialogTitle}>
+            Cancel Subscription
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Are you sure you want to cancel your Pro subscription? You will
+              retain access until the end of your current billing period, then
+              your plan will revert to Free.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCancelSubDialogVisible(false)}>
+              Keep Pro
+            </Button>
+            <Button
+              onPress={async () => {
+                setCancelSubDialogVisible(false);
+                try {
+                  await cancelSubscriptionMutation.mutateAsync();
+                  showSnackbar('Subscription cancellation initiated');
+                } catch {
+                  showSnackbar(
+                    'Failed to cancel subscription. Please try again.',
+                  );
+                }
+              }}
+              textColor={theme.colors.error}
+            >
+              Cancel Subscription
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
       {/* Snackbar for feedback messages */}
       <Snackbar
         visible={snackbarVisible}
@@ -663,6 +846,28 @@ const styles = StyleSheet.create({
   },
   browseTopicsButton: {
     marginTop: 8,
+    borderRadius: 20,
+  },
+  planBadgeRow: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  planDetails: {
+    alignItems: 'center',
+  },
+  upgradeButton: {
+    marginTop: 12,
+    borderRadius: 20,
+  },
+  cancelSubButton: {
+    marginTop: 12,
     borderRadius: 20,
   },
   accordion: {

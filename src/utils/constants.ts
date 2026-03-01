@@ -18,7 +18,12 @@ export const QUERY_KEYS = {
   question: (id: string) => ['questions', id] as const,
   aiAnswer: (questionId: string) => ['ai-answers', questionId] as const,
   profile: ['users', 'profile'] as const,
+  subscription: ['users', 'subscription'] as const,
   notificationHistory: ['notifications', 'history'] as const,
+} as const;
+
+export const SUBSCRIPTION_LIMITS = {
+  FREE_MAX_TOPICS: 3,
 } as const;
 
 export const DIFFICULTY_COLORS = {
