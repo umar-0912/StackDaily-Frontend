@@ -4,6 +4,7 @@ import type {
   UpdateProfileRequest,
   UpdateSubscriptionsRequest,
   UpdateFcmTokenRequest,
+  SubscriptionInfo,
 } from '../types';
 
 export const usersApi = {
@@ -17,4 +18,7 @@ export const usersApi = {
 
   updateFcmToken: (data: UpdateFcmTokenRequest) =>
     apiClient.patch<{ message: string }>('/users/fcm-token', data),
+
+  getSubscriptionInfo: () =>
+    apiClient.get<SubscriptionInfo>('/users/subscription'),
 };

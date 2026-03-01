@@ -3,6 +3,36 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum SubscriptionPlan {
+  FREE = 'free',
+  PRO = 'pro',
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = 'active',
+  CANCELLED = 'cancelled',
+  EXPIRED = 'expired',
+}
+
+export interface Subscription {
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  startDate: string | null;
+  endDate: string | null;
+  cancelledAt: string | null;
+}
+
+export interface SubscriptionInfo {
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  maxTopics: number | null;
+  currentTopicCount: number;
+  isOverLimit: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  daysRemaining: number | null;
+}
+
 export interface Streak {
   count: number;
   lastActiveDate: string | null;
@@ -23,6 +53,7 @@ export interface User {
   isActive: boolean;
   subscribedTopics: PopulatedTopic[];
   streak: Streak;
+  subscription: Subscription;
   fcmToken?: string;
   createdAt: string;
   updatedAt: string;
@@ -62,4 +93,13 @@ export interface UpdateSubscriptionsRequest {
 
 export interface UpdateFcmTokenRequest {
   fcmToken: string;
+}
+
+export interface SubscribeResponse {
+  shortUrl: string;
+  subscriptionId: string;
+}
+
+export interface CancelSubscriptionResponse {
+  message: string;
 }

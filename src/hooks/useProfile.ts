@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../api/users';
 import { QUERY_KEYS } from '../utils/constants';
 import { useAuthStore } from '../stores/authStore';
-import type { UpdateProfileRequest, UpdateSubscriptionsRequest } from '../types';
+import type { UpdateProfileRequest, UpdateSubscriptionsRequest, SubscriptionInfo } from '../types';
 
 export function useProfile() {
   return useQuery({
@@ -26,6 +26,16 @@ export function useUpdateProfile() {
     onSuccess: (updatedUser) => {
       setUser(updatedUser);
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
+    },
+  });
+}
+
+export function useSubscriptionInfo() {
+  return useQuery({
+    queryKey: QUERY_KEYS.subscription,
+    queryFn: async () => {
+      const { data } = await usersApi.getSubscriptionInfo();
+      return data;
     },
   });
 }
