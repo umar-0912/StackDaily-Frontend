@@ -1,6 +1,5 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { usersApi } from '../api/users';
 
@@ -22,13 +21,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
       return null;
     }
 
-    // Check if project ID is available (requires EAS/Firebase setup)
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    if (!projectId) {
-      console.warn('No EAS projectId configured — skipping push notification registration');
-      return null;
-    }
-
     // Check existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -44,9 +36,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
       return null;
     }
 
-    // Get the Expo push token
-    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-
     // Set up Android notification channel
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
@@ -57,7 +46,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
-    return tokenData.data;
+    // Get the native FCM device token (required by Firebase Admin SDK on backend)
+    const tokenData = await Notifications.getDevicePushTokenAsync();
+
+    return tokenData.data as string;
   } catch (error) {
     console.warn('Push notification setup failed (this is OK during local dev):', error);
     return null;
