@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StackDaily — Learn Something New Every Day</title>
+    <meta name="description" content="StackDaily delivers daily bite-sized technical questions with AI-powered answers and MCQs. Master JavaScript, Python, Docker, AWS and 20+ topics in just 5 minutes a day.">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            background: radial-gradient(ellipse at 50% 0%, rgba(98, 0, 238, 0.15) 0%, transparent 60%);
+        }
+
+        .logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 24px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(98, 0, 238, 0.3);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            color: #a1a1aa;
+            margin-bottom: 2.5rem;
+            max-width: 500px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: #6200EE;
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 1rem 2.5rem;
+            border-radius: 16px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 24px rgba(98, 0, 238, 0.4);
+        }
+
+        .download-btn:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(98, 0, 238, 0.5);
+        }
+
+        .download-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .version-badge {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #71717a;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: #e4e4e7;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(98, 0, 238, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #e4e4e7;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: #a1a1aa;
+            line-height: 1.6;
+        }
+
+        /* Topics Section */
+        .topics {
+            padding: 3rem 2rem 5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .topics h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: #e4e4e7;
+        }
+
+        .topic-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .topic-tag {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.25rem;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: #d4d4d8;
+            transition: all 0.2s ease;
+        }
+
+        .topic-tag:hover {
+            border-color: rgba(98, 0, 238, 0.5);
+            color: #a78bfa;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 3rem 2rem 5rem;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .pricing h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: #e4e4e7;
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .pricing-card.pro {
+            border-color: rgba(98, 0, 238, 0.5);
+            background: rgba(98, 0, 238, 0.08);
+        }
+
+        .pricing-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 1rem;
+        }
+
+        .price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #71717a;
+        }
+
+        .pricing-features {
+            list-style: none;
+            text-align: left;
+        }
+
+        .pricing-features li {
+            padding: 0.4rem 0;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+        }
+
+        .pricing-features li::before {
+            content: '✓ ';
+            color: #4CAF50;
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            color: #52525b;
+            font-size: 0.85rem;
+        }
+
+        .footer a {
+            color: #a78bfa;
+            text-decoration: none;
+        }
+
+        /* Privacy Section */
+        .privacy {
+            padding: 3rem 2rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .privacy h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #e4e4e7;
+            text-align: center;
+        }
+
+        .privacy p {
+            font-size: 0.9rem;
+            color: #a1a1aa;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.25rem; }
+            .tagline { font-size: 1rem; }
+            .pricing-cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero -->
+    <section class="hero">
+        <img src="icon.png" alt="StackDaily Logo" class="logo">
+        <h1>StackDaily</h1>
+        <p class="tagline">Daily bite-sized technical questions with AI-powered answers. Master 20+ tech topics in just 5 minutes a day.</p>
+        <a href="#" id="downloadBtn" class="download-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 2H6.477C4.553 2 3 3.553 3 5.477v13.046C3 20.447 4.553 22 6.477 22h11.046C19.447 22 21 20.447 21 18.523V5.477C21 3.553 19.447 2 17.523 2zM12 17.5l-4.5-4.5h3V8h3v5h3L12 17.5z"/></svg>
+            Download APK
+        </a>
+        <p class="version-badge">v1.0.0 &middot; Android &middot; 25 MB</p>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <h2>Why StackDaily?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📚</div>
+                <h3>Daily Questions</h3>
+                <p>Get fresh technical questions every morning for each topic you subscribe to. Never run out of learning material.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered Answers</h3>
+                <p>Every question comes with a detailed AI-generated explanation and 3 multiple-choice questions to test your understanding.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔥</div>
+                <h3>Streak Tracking</h3>
+                <p>Build a daily learning habit with streak tracking. See your consistency grow with fire badges at 3, 7, 14 and 30+ day milestones.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <h3>Push Notifications</h3>
+                <p>Get reminded every morning with a push notification so you never miss your daily dose of learning.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Micro-Learning</h3>
+                <p>Each question takes just 2-5 minutes to read and understand. Perfect for busy developers on the go.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💳</div>
+                <h3>UPI Auto-Pay</h3>
+                <p>Upgrade to Pro with seamless UPI auto-pay powered by Razorpay. Cancel anytime from the app.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Topics -->
+    <section class="topics">
+        <h2>20+ Topics to Master</h2>
+        <div class="topic-tags">
+            <span class="topic-tag">JavaScript</span>
+            <span class="topic-tag">TypeScript</span>
+            <span class="topic-tag">React</span>
+            <span class="topic-tag">React Native</span>
+            <span class="topic-tag">Node.js</span>
+            <span class="topic-tag">Python</span>
+            <span class="topic-tag">Docker</span>
+            <span class="topic-tag">AWS</span>
+            <span class="topic-tag">Kubernetes</span>
+            <span class="topic-tag">MongoDB</span>
+            <span class="topic-tag">PostgreSQL</span>
+            <span class="topic-tag">GraphQL</span>
+            <span class="topic-tag">REST APIs</span>
+            <span class="topic-tag">Git</span>
+            <span class="topic-tag">System Design</span>
+            <span class="topic-tag">Data Structures</span>
+            <span class="topic-tag">Algorithms</span>
+            <span class="topic-tag">CSS</span>
+            <span class="topic-tag">HTML</span>
+            <span class="topic-tag">DevOps</span>
+            <span class="topic-tag">Linux</span>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing">
+        <h2>Simple Pricing</h2>
+        <div class="pricing-cards">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="price">&#8377;0 <span>/ month</span></div>
+                <ul class="pricing-features">
+                    <li>Up to 3 topics</li>
+                    <li>Daily questions & AI answers</li>
+                    <li>MCQ quizzes</li>
+                    <li>Streak tracking</li>
+                    <li>Push notifications</li>
+                </ul>
+            </div>
+            <div class="pricing-card pro">
+                <h3>Pro</h3>
+                <div class="price">&#8377;30 <span>/ month</span></div>
+                <ul class="pricing-features">
+                    <li>Unlimited topics</li>
+                    <li>Daily questions & AI answers</li>
+                    <li>MCQ quizzes</li>
+                    <li>Streak tracking</li>
+                    <li>Push notifications</li>
+                    <li>UPI auto-pay via Razorpay</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Policy -->
+    <section class="privacy" id="privacy">
+        <h2>Privacy Policy</h2>
+        <p><strong>Last updated:</strong> March 2026</p>
+        <p>StackDaily ("we", "our", "us") respects your privacy. This policy describes how we collect, use, and protect your information when you use the StackDaily mobile application.</p>
+        <p><strong>Information We Collect:</strong> We collect your email address and username during signup for account creation. We store your topic subscriptions, reading history, and streak data to provide personalized learning experiences. We collect Firebase Cloud Messaging tokens to send push notifications. Payment information is processed securely through Razorpay and is never stored on our servers.</p>
+        <p><strong>How We Use Your Information:</strong> To deliver daily technical questions based on your subscribed topics. To track your learning streaks and progress. To send push notifications about new daily content. To process Pro subscription payments via Razorpay.</p>
+        <p><strong>Third-Party Services:</strong> We use MongoDB Atlas for data storage, Firebase Cloud Messaging for push notifications, OpenAI for AI-generated answers, and Razorpay for payment processing. Each service has its own privacy policy.</p>
+        <p><strong>Data Security:</strong> Passwords are hashed using bcrypt. Authentication uses JWT tokens. All API communications use HTTPS encryption.</p>
+        <p><strong>Data Deletion:</strong> You can request account deletion by contacting us. Upon deletion, all your personal data will be permanently removed from our systems.</p>
+        <p><strong>Contact:</strong> For privacy concerns, reach us at <a href="mailto:support@stackdaily.app">support@stackdaily.app</a></p>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 StackDaily. Built with ❤️ for developers.</p>
+        <p style="margin-top: 0.5rem;"><a href="#privacy">Privacy Policy</a></p>
+    </footer>
+
+    <script>
+        // APK download link — update this after EAS build
+        const APK_URL = '#';
+        document.getElementById('downloadBtn').addEventListener('click', function(e) {
+            if (APK_URL === '#') {
+                e.preventDefault();
+                alert('APK will be available soon! Check back shortly.');
+            }
+        });
+    </script>
+
+</body>
+</html>
