@@ -20,6 +20,8 @@ export const QUERY_KEYS = {
   profile: ['users', 'profile'] as const,
   subscription: ['users', 'subscription'] as const,
   notificationHistory: ['notifications', 'history'] as const,
+  progress: ['progress'] as const,
+  topicProgress: (topicId: string) => ['progress', topicId] as const,
 } as const;
 
 export const SUBSCRIPTION_LIMITS = {

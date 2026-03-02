@@ -1,4 +1,5 @@
 export interface FeedTopic {
+  _id: string;
   name: string;
   slug: string;
   icon?: string | null;
@@ -22,15 +23,24 @@ export interface FeedAnswer {
   mcqs?: FeedMcq[];
 }
 
+export interface FeedProgress {
+  status: 'not_started' | 'in_progress' | 'completed';
+  questionsAnswered: number;
+  totalQuestions: number;
+  currentDifficulty: 'beginner' | 'intermediate' | 'advanced';
+}
+
 export interface DailyFeedItem {
   dailySelectionId: string;
   topic: FeedTopic;
   question: FeedQuestion;
   answer: FeedAnswer;
+  progress: FeedProgress;
 }
 
 export interface MarkReadRequest {
   dailySelectionId: string;
+  topicId: string;
 }
 
 export interface MarkReadResponse {

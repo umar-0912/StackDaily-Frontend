@@ -52,6 +52,7 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   subscribedTopics: PopulatedTopic[];
+  topicSubscriptionHistory: string[];
   streak: Streak;
   subscription: Subscription;
   fcmToken?: string;

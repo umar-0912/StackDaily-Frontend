@@ -30,10 +30,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ProgressBar } from 'react-native-paper';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile, useUpdateProfile, useSubscriptionInfo } from '../../src/hooks/useProfile';
 import { useSubscribe, useCancelSubscription } from '../../src/hooks/usePayments';
 import { useNotificationHistory } from '../../src/hooks/useNotifications';
+import { useProgress } from '../../src/hooks/useProgress';
 import { notificationsApi } from '../../src/api/notifications';
 import { QUERY_KEYS } from '../../src/utils/constants';
 import { LoadingScreen, ErrorScreen, StreakBadge, TopicChip } from '../../src/components';
@@ -115,6 +117,7 @@ export default function ProfileScreen() {
     useNotificationHistory(notificationPage);
 
   const { data: subscriptionInfo } = useSubscriptionInfo();
+  const { data: progressData } = useProgress();
   const subscribeMutation = useSubscribe();
   const cancelSubscriptionMutation = useCancelSubscription();
 
@@ -223,6 +226,7 @@ export default function ProfileScreen() {
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.profile }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notificationHistory }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progress }),
       ]);
     } finally {
       setRefreshing(false);
@@ -343,6 +347,44 @@ export default function ProfileScreen() {
             {getLastActiveText(displayUser?.streak.lastActiveDate ?? null)}
           </Text>
         </Surface>
+
+        {/* Learning Progress Section */}
+        {progressData && progressData.length > 0 ? (
+          <Surface style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]} elevation={1}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Learning Progress
+            </Text>
+            {progressData.map((p) => {
+              const progressPercent = p.percentComplete / 100;
+              return (
+                <View key={p._id} style={styles.progressItem}>
+                  <View style={styles.progressItemHeader}>
+                    <Text variant="bodyMedium" style={{ fontWeight: '500' }}>
+                      {p.topic.name}
+                    </Text>
+                    <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      {p.questionsAnswered}/{p.totalQuestions}
+                    </Text>
+                  </View>
+                  <ProgressBar
+                    progress={progressPercent}
+                    color={
+                      p.status === 'completed' ? '#4CAF50' : theme.colors.primary
+                    }
+                    style={styles.profileProgressBar}
+                  />
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                    {p.status === 'completed'
+                      ? 'Completed'
+                      : p.status === 'in_progress'
+                        ? `In Progress - ${p.percentComplete}%`
+                        : 'Not Started'}
+                  </Text>
+                </View>
+              );
+            })}
+          </Surface>
+        ) : null}
 
         {/* Subscription Section */}
         <Surface style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]} elevation={1}>
@@ -822,6 +864,19 @@ const styles = StyleSheet.create({
   },
   manageButtonContent: {
     flexDirection: 'row-reverse',
+  },
+  progressItem: {
+    marginBottom: 12,
+  },
+  progressItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  profileProgressBar: {
+    height: 4,
+    borderRadius: 2,
   },
   streakMessage: {
     textAlign: 'center',
