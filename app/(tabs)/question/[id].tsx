@@ -132,6 +132,7 @@ export default function QuestionDetailScreen() {
       const item: DailyFeedItem = {
         dailySelectionId: id!,
         topic: {
+          _id: question.topicId._id ?? '',
           name: question.topicId.name,
           slug: question.topicId.slug,
           icon: null,
@@ -145,6 +146,12 @@ export default function QuestionDetailScreen() {
           content: aiAnswer.answer,
           generatedAt: aiAnswer.generatedAt,
         },
+        progress: {
+          status: 'not_started',
+          questionsAnswered: 0,
+          totalQuestions: 0,
+          currentDifficulty: question.difficulty,
+        },
       };
       return item;
     },
@@ -156,18 +163,21 @@ export default function QuestionDetailScreen() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const handleMarkRead = useCallback(() => {
-    if (!id) return;
-    markReadMutation.mutate(id, {
-      onSuccess: () => {
-        setSnackbarMessage('Marked as read! Streak updated.');
-        setSnackbarVisible(true);
+    if (!id || !feedItem) return;
+    markReadMutation.mutate(
+      { dailySelectionId: id, topicId: feedItem.topic._id },
+      {
+        onSuccess: () => {
+          setSnackbarMessage('Marked as read! Streak updated.');
+          setSnackbarVisible(true);
+        },
+        onError: () => {
+          setSnackbarMessage('Failed to mark as read. Please try again.');
+          setSnackbarVisible(true);
+        },
       },
-      onError: () => {
-        setSnackbarMessage('Failed to mark as read. Please try again.');
-        setSnackbarVisible(true);
-      },
-    });
-  }, [id, markReadMutation]);
+    );
+  }, [id, feedItem, markReadMutation]);
 
   if (!parsedItem && isLoading) {
     return (

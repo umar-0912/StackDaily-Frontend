@@ -119,8 +119,8 @@ export default function FeedScreen() {
   );
 
   const handleMarkRead = useCallback(
-    (dailySelectionId: string) => {
-      markReadMutation.mutate(dailySelectionId, {
+    (dailySelectionId: string, topicId: string) => {
+      markReadMutation.mutate({ dailySelectionId, topicId }, {
         onSuccess: () => {
           setSnackbarMessage('Marked as read! Streak updated.');
           setSnackbarVisible(true);
@@ -139,10 +139,10 @@ export default function FeedScreen() {
       <QuestionCard
         item={item}
         onPress={() => handlePressItem(item)}
-        onMarkRead={() => handleMarkRead(item.dailySelectionId)}
+        onMarkRead={() => handleMarkRead(item.dailySelectionId, item.topic._id)}
         isMarkingRead={
           markReadMutation.isPending &&
-          markReadMutation.variables === item.dailySelectionId
+          markReadMutation.variables?.dailySelectionId === item.dailySelectionId
         }
       />
     ),

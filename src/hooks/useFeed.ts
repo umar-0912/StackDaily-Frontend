@@ -16,11 +16,12 @@ export function useMarkRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dailySelectionId: string) =>
-      dailyApi.markRead({ dailySelectionId }),
+    mutationFn: ({ dailySelectionId, topicId }: { dailySelectionId: string; topicId: string }) =>
+      dailyApi.markRead({ dailySelectionId, topicId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.progress] });
     },
   });
 }

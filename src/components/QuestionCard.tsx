@@ -1,5 +1,5 @@
 import { View, StyleSheet, Pressable } from 'react-native';
-import { Card, Chip, Button, Text, useTheme } from 'react-native-paper';
+import { Card, Chip, Button, Text, ProgressBar, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../utils/constants';
 import { getTopicIcon } from '../utils/icons';
@@ -90,6 +90,30 @@ export function QuestionCard({
               ) : null}
             </View>
           ) : null}
+
+          {item.progress ? (
+            <View style={styles.progressSection}>
+              <View style={styles.progressLabelRow}>
+                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Question {item.progress.questionsAnswered + 1} of {item.progress.totalQuestions}
+                </Text>
+                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  {item.progress.totalQuestions > 0
+                    ? Math.round((item.progress.questionsAnswered / item.progress.totalQuestions) * 100)
+                    : 0}%
+                </Text>
+              </View>
+              <ProgressBar
+                progress={
+                  item.progress.totalQuestions > 0
+                    ? item.progress.questionsAnswered / item.progress.totalQuestions
+                    : 0
+                }
+                color={theme.colors.primary}
+                style={styles.progressBar}
+              />
+            </View>
+          ) : null}
         </Card.Content>
 
         {onMarkRead ? (
@@ -164,6 +188,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   moreTagsText: {},
+  progressSection: {
+    marginTop: 12,
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+  },
   cardActions: {
     justifyContent: 'space-between',
     paddingHorizontal: 8,

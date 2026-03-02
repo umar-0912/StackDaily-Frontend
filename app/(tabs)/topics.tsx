@@ -12,16 +12,19 @@ import {
   Chip,
   Button,
   Searchbar,
+  ProgressBar,
   useTheme,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTopics } from '../../src/hooks/useTopics';
 import { useUpdateSubscriptions } from '../../src/hooks/useProfile';
+import { useProgress } from '../../src/hooks/useProgress';
 import { useAuthStore } from '../../src/stores/authStore';
 import { LoadingScreen, ErrorScreen, EmptyState } from '../../src/components';
 import { getTopicIcon } from '../../src/utils/icons';
-import type { Topic } from '../../src/types';
+import { DIFFICULTY_LABELS, DIFFICULTY_COLORS } from '../../src/utils/constants';
+import type { Topic, TopicProgress } from '../../src/types';
 
 const ALL_CATEGORY = 'All';
 
@@ -38,11 +41,22 @@ export default function TopicsScreen() {
     isActive: 'true',
   });
   const updateSubscriptionsMutation = useUpdateSubscriptions();
+  const { data: progressData } = useProgress();
   const user = useAuthStore((state) => state.user);
 
   const subscribedIds = useMemo(() => {
     return new Set(user?.subscribedTopics.map((t) => t._id) ?? []);
   }, [user?.subscribedTopics]);
+
+  const progressByTopicId = useMemo(() => {
+    const map = new Map<string, TopicProgress>();
+    if (progressData) {
+      for (const p of progressData) {
+        map.set(p.topic._id, p);
+      }
+    }
+    return map;
+  }, [progressData]);
 
   const categories = useMemo(() => {
     if (!topicsData?.data) return [ALL_CATEGORY];
@@ -118,6 +132,7 @@ export default function TopicsScreen() {
       const isSubscribed = subscribedIds.has(item._id);
       const iconName = getTopicIcon(item.icon);
       const isToggling = togglingTopicId === item._id;
+      const progress = progressByTopicId.get(item._id);
 
       return (
         <Card style={[styles.topicCard, { backgroundColor: theme.colors.surface }]} mode="elevated">
@@ -151,6 +166,65 @@ export default function TopicsScreen() {
             >
               {item.description}
             </Text>
+
+            {isSubscribed && progress ? (
+              <View style={styles.topicProgressSection}>
+                <View style={styles.topicProgressLabelRow}>
+                  <Chip
+                    compact
+                    style={[
+                      styles.statusChip,
+                      {
+                        backgroundColor:
+                          progress.status === 'completed'
+                            ? '#4CAF5020'
+                            : progress.status === 'in_progress'
+                              ? '#2196F320'
+                              : '#9E9E9E20',
+                      },
+                    ]}
+                    textStyle={{
+                      fontSize: 10,
+                      color:
+                        progress.status === 'completed'
+                          ? '#4CAF50'
+                          : progress.status === 'in_progress'
+                            ? '#2196F3'
+                            : '#9E9E9E',
+                    }}
+                  >
+                    {progress.status === 'completed'
+                      ? 'Completed'
+                      : progress.status === 'in_progress'
+                        ? 'In Progress'
+                        : 'Not Started'}
+                  </Chip>
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    {progress.questionsAnswered}/{progress.totalQuestions}
+                  </Text>
+                </View>
+                <ProgressBar
+                  progress={progress.percentComplete / 100}
+                  color={
+                    progress.status === 'completed'
+                      ? '#4CAF50'
+                      : theme.colors.primary
+                  }
+                  style={styles.topicProgressBar}
+                />
+                {progress.currentDifficulty ? (
+                  <Text
+                    variant="labelSmall"
+                    style={{
+                      color: DIFFICULTY_COLORS[progress.currentDifficulty as keyof typeof DIFFICULTY_COLORS] ?? theme.colors.onSurfaceVariant,
+                      marginTop: 4,
+                    }}
+                  >
+                    Level: {DIFFICULTY_LABELS[progress.currentDifficulty as keyof typeof DIFFICULTY_LABELS] ?? progress.currentDifficulty}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
           </Card.Content>
 
           <Card.Actions style={styles.topicActions}>
@@ -173,6 +247,7 @@ export default function TopicsScreen() {
     },
     [
       subscribedIds,
+      progressByTopicId,
       theme.colors.primary,
       theme.colors.onPrimary,
       theme.colors.surface,
@@ -312,6 +387,22 @@ const styles = StyleSheet.create({
   },
   topicDescription: {
     lineHeight: 20,
+  },
+  topicProgressSection: {
+    marginTop: 12,
+  },
+  topicProgressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  statusChip: {
+    height: 22,
+  },
+  topicProgressBar: {
+    height: 4,
+    borderRadius: 2,
   },
   topicActions: {
     justifyContent: 'flex-end',
