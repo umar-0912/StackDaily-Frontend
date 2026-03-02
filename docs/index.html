@@ -419,14 +419,9 @@
     </footer>
 
     <script>
-        // APK download link — update this after EAS build
-        const APK_URL = '#';
-        document.getElementById('downloadBtn').addEventListener('click', function(e) {
-            if (APK_URL === '#') {
-                e.preventDefault();
-                alert('APK will be available soon! Check back shortly.');
-            }
-        });
+        // APK download link
+        const APK_URL = 'https://expo.dev/accounts/mdumarsiddiqui/projects/micro-learner-app/builds/12f77110-f90b-48b8-981a-f9234a93af7a';
+        document.getElementById('downloadBtn').href = APK_URL;
     </script>
 
 </body>
