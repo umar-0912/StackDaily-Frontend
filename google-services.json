@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409646617319",
+    "project_id": "stackdaily-c2ed5",
+    "storage_bucket": "stackdaily-c2ed5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409646617319:android:ef2b78ae7e89a73ef1c842",
+        "android_client_info": {
+          "package_name": "com.microlearner.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAN-gK4CSM1gVgxwas0A-TQsU3ZJG34S1M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
