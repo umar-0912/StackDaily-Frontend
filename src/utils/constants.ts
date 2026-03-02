@@ -9,7 +9,7 @@ const getDevApiUrl = (): string => {
 
 export const API_BASE_URL = __DEV__
   ? getDevApiUrl()
-  : 'https://api.microlearner.com/api/v1';
+  : 'https://stackdaily-backend-production.up.railway.app/api/v1';
 
 export const QUERY_KEYS = {
   feed: ['daily', 'feed'] as const,
