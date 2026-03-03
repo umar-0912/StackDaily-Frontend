@@ -3,10 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Pressable,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from 'react-native';
 import {
   Text,
@@ -17,6 +13,7 @@ import {
   Divider,
   Snackbar,
 } from 'react-native-paper';
+import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -26,68 +23,45 @@ import { aiAnswersApi } from '../../../src/api/ai-answers';
 import { QUERY_KEYS, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../../../src/utils/constants';
 import { getTopicIcon } from '../../../src/utils/icons';
 import { useMarkRead } from '../../../src/hooks/useFeed';
+import { McqQuiz } from '../../../src/components/McqQuiz';
 import type { DailyFeedItem } from '../../../src/types';
 
-// Enable LayoutAnimation on Android
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const markdownStyles = {
+  body: { color: '#333', fontSize: 15, lineHeight: 24 },
+  heading1: { color: '#6200EE', fontSize: 22, fontWeight: '700' as const, marginBottom: 8, marginTop: 16 },
+  heading2: { color: '#6200EE', fontSize: 19, fontWeight: '600' as const, marginBottom: 6, marginTop: 14 },
+  heading3: { color: '#6200EE', fontSize: 17, fontWeight: '600' as const, marginBottom: 4, marginTop: 12 },
+  code_inline: { backgroundColor: '#F0EAF8', color: '#6200EE', paddingHorizontal: 4, borderRadius: 4, fontSize: 14 },
+  code_block: { backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8, fontSize: 13, color: '#333' },
+  fence: { backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8, fontSize: 13, color: '#333' },
+  bullet_list: { marginVertical: 4 },
+  ordered_list: { marginVertical: 4 },
+  list_item: { marginVertical: 2 },
+  strong: { fontWeight: '700' as const },
+  blockquote: { backgroundColor: '#F5F5F5', borderLeftWidth: 3, borderLeftColor: '#6200EE', paddingLeft: 12, paddingVertical: 8, marginVertical: 8 },
+};
 
 function AnswerSection({ answer }: { answer: { content: string; generatedAt: string } }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const toggleExpanded = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded((prev) => !prev);
-  }, []);
-
   const formattedDate = new Date(answer.generatedAt).toLocaleDateString(
     'en-US',
-    {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    },
+    { year: 'numeric', month: 'short', day: 'numeric' },
   );
 
   return (
     <Surface style={styles.answerSection} elevation={1}>
-      <Pressable onPress={toggleExpanded} style={styles.answerHeader}>
+      <View style={styles.answerHeader}>
         <View style={styles.answerHeaderLeft}>
-          <MaterialCommunityIcons
-            name="robot-outline"
-            size={22}
-            color="#6200EE"
-          />
+          <MaterialCommunityIcons name="robot-outline" size={22} color="#6200EE" />
           <Text variant="titleMedium" style={styles.answerTitle}>
             AI Answer
           </Text>
         </View>
-        <MaterialCommunityIcons
-          name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={24}
-          color="#666"
-        />
-      </Pressable>
-
-      {expanded ? (
-        <View style={styles.answerBody}>
-          <Divider style={styles.answerDivider} />
-          <Text variant="bodyLarge" style={styles.answerContent}>
-            {answer.content}
-          </Text>
-          <Text variant="bodySmall" style={styles.answerDate}>
-            Generated on {formattedDate}
-          </Text>
-        </View>
-      ) : (
-        <Text variant="bodySmall" style={styles.tapHint}>
-          Tap to reveal the answer
-        </Text>
-      )}
+      </View>
+      <Divider style={styles.answerDivider} />
+      <Markdown style={markdownStyles}>{answer.content}</Markdown>
+      <Text variant="bodySmall" style={styles.answerDate}>
+        Generated on {formattedDate}
+      </Text>
     </Surface>
   );
 }
@@ -100,6 +74,7 @@ export default function QuestionDetailScreen() {
   const router = useRouter();
   const markReadMutation = useMarkRead();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Try to parse passed data first (wrapped in try/catch for safety)
   let parsedItem: DailyFeedItem | null = null;
@@ -128,7 +103,6 @@ export default function QuestionDetailScreen() {
       const question = questionRes.data;
       const aiAnswer = answerRes.data;
 
-      // Build a DailyFeedItem-compatible object from the API responses
       const item: DailyFeedItem = {
         dailySelectionId: id!,
         topic: {
@@ -145,6 +119,7 @@ export default function QuestionDetailScreen() {
         answer: {
           content: aiAnswer.answer,
           generatedAt: aiAnswer.generatedAt,
+          mcqs: aiAnswer.mcqs || [],
         },
         progress: {
           status: 'not_started',
@@ -160,7 +135,22 @@ export default function QuestionDetailScreen() {
 
   const feedItem = parsedItem ?? fetchedItem;
 
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const handleQuizSubmit = useCallback(() => {
+    if (!id || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) return;
+    markReadMutation.mutate(
+      { dailySelectionId: id, topicId: feedItem.topic._id },
+      {
+        onSuccess: () => {
+          setSnackbarMessage('Great job! Progress saved.');
+          setSnackbarVisible(true);
+        },
+        onError: () => {
+          setSnackbarMessage('Failed to save progress. Please try again.');
+          setSnackbarVisible(true);
+        },
+      },
+    );
+  }, [id, feedItem, markReadMutation]);
 
   const handleMarkRead = useCallback(() => {
     if (!id || !feedItem) return;
@@ -248,6 +238,7 @@ export default function QuestionDetailScreen() {
     DIFFICULTY_LABELS[feedItem.question.difficulty] ??
     feedItem.question.difficulty;
   const topicIcon = getTopicIcon(feedItem.topic.icon ?? undefined);
+  const hasMcqs = feedItem.answer.mcqs && feedItem.answer.mcqs.length > 0;
 
   return (
     <>
@@ -337,21 +328,25 @@ export default function QuestionDetailScreen() {
             </View>
           ) : null}
 
-          {/* AI Answer (Expandable) */}
+          {/* AI Answer (always visible, markdown rendered) */}
           <AnswerSection answer={feedItem.answer} />
 
-          {/* Mark as Read Button */}
-          <Button
-            mode="contained"
-            onPress={handleMarkRead}
-            loading={markReadMutation.isPending}
-            disabled={markReadMutation.isPending}
-            style={styles.markReadButton}
-            icon="check-circle-outline"
-            buttonColor="#4CAF50"
-          >
-            Mark as Read
-          </Button>
+          {/* MCQ Quiz or fallback "I've Read This" button */}
+          {hasMcqs ? (
+            <McqQuiz mcqs={feedItem.answer.mcqs!} onSubmit={handleQuizSubmit} />
+          ) : (
+            <Button
+              mode="contained"
+              onPress={handleMarkRead}
+              loading={markReadMutation.isPending}
+              disabled={markReadMutation.isPending || markReadMutation.isSuccess}
+              style={styles.markReadButton}
+              icon="check-circle-outline"
+              buttonColor="#4CAF50"
+            >
+              I've Read This
+            </Button>
+          )}
 
           {/* Back Button */}
           <Button
@@ -503,20 +498,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6200EE',
   },
-  tapHint: {
-    color: '#999',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  answerBody: {
-    marginTop: 4,
-  },
   answerDivider: {
     marginVertical: 12,
-  },
-  answerContent: {
-    color: '#333',
-    lineHeight: 26,
   },
   answerDate: {
     color: '#999',

@@ -19,6 +19,7 @@ const ICON_MAP: Record<string, IconName> = {
   aws: 'aws',
   docker: 'docker',
   sql: 'database',
+  mysql: 'database',
   html: 'language-html5',
   css: 'language-css3',
   go: 'language-go',

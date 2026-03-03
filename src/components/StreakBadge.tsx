@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface StreakBadgeProps {
   count: number;
+  maxStreak?: number;
   size?: 'small' | 'large';
 }
 
@@ -16,7 +17,7 @@ function getFireColor(count: number): string {
   return '#FFB74D';
 }
 
-export function StreakBadge({ count, size = 'small' }: StreakBadgeProps) {
+export function StreakBadge({ count, maxStreak, size = 'small' }: StreakBadgeProps) {
   const theme = useTheme();
   const fireColor = getFireColor(count);
   const isLarge = size === 'large';
@@ -31,6 +32,11 @@ export function StreakBadge({ count, size = 'small' }: StreakBadgeProps) {
         <Text variant="titleMedium" style={[styles.largeLabel, { color: theme.colors.onSurfaceVariant }]}>
           Day Streak
         </Text>
+        {maxStreak !== undefined && maxStreak > 0 && (
+          <Text variant="bodySmall" style={[styles.bestStreak, { color: theme.colors.onSurfaceVariant }]}>
+            Best: {maxStreak} days
+          </Text>
+        )}
       </Surface>
     );
   }
@@ -77,5 +83,9 @@ const styles = StyleSheet.create({
   },
   largeLabel: {
     fontWeight: '500',
+  },
+  bestStreak: {
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });

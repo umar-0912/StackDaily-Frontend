@@ -56,6 +56,15 @@ export default function RootLayout() {
     restoreSession();
   }, [restoreSession]);
 
+  // Auth state listener: redirect to login on logout, clear stale query data
+  useEffect(() => {
+    if (isRestoring) return;
+    if (!isAuthenticated) {
+      queryClient.clear();
+      router.replace('/(auth)/login');
+    }
+  }, [isAuthenticated, isRestoring]);
+
   // Register for push notifications after authentication
   useEffect(() => {
     if (!isAuthenticated || isRestoring) return;

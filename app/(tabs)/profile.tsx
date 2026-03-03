@@ -84,12 +84,15 @@ function formatDate(dateString: string): string {
   });
 }
 
-function getStreakMessage(count: number): string {
+function getStreakMessage(count: number, maxStreak: number): string {
+  if (count === 0 && maxStreak > 0) {
+    return `Start a new streak! Your best was ${maxStreak} days.`;
+  }
   if (count === 0) {
     return 'Start your streak today!';
   }
-  if (count === 1) {
-    return '1 day streak! Keep it up!';
+  if (count >= maxStreak && count > 1) {
+    return `${count} day streak! New personal best!`;
   }
   return `${count} day streak! Keep it up!`;
 }
@@ -335,13 +338,14 @@ export default function ProfileScreen() {
           </Text>
           <StreakBadge
             count={displayUser?.streak.count ?? 0}
+            maxStreak={displayUser?.streak.maxStreak ?? 0}
             size="large"
           />
           <Text
             variant="bodyMedium"
             style={[styles.streakMessage, { color: theme.colors.primary }]}
           >
-            {getStreakMessage(displayUser?.streak.count ?? 0)}
+            {getStreakMessage(displayUser?.streak.count ?? 0, displayUser?.streak.maxStreak ?? 0)}
           </Text>
           <Text variant="bodySmall" style={[styles.lastActive, { color: theme.colors.onSurfaceVariant }]}>
             {getLastActiveText(displayUser?.streak.lastActiveDate ?? null)}

@@ -1,10 +1,9 @@
 import { Platform } from 'react-native';
 
 const getDevApiUrl = (): string => {
-  // For real phone testing: use your Mac's local IP
-  // For Android emulator: use 10.0.2.2
-  // For iOS simulator: use localhost
-  return 'http://10.93.133.239:3000/api/v1';
+  // Point to deployed backend for Expo Go testing
+  // For local backend: use your Mac's IP (e.g. http://192.168.x.x:3000/api/v1)
+  return 'https://stackdaily-backend-production.up.railway.app/api/v1';
 };
 
 export const API_BASE_URL = __DEV__
