@@ -8,15 +8,11 @@ import type { DailyFeedItem } from '../types';
 interface QuestionCardProps {
   item: DailyFeedItem;
   onPress: () => void;
-  onMarkRead?: () => void;
-  isMarkingRead?: boolean;
 }
 
 export function QuestionCard({
   item,
   onPress,
-  onMarkRead,
-  isMarkingRead = false,
 }: QuestionCardProps) {
   const theme = useTheme();
   const difficultyColor =
@@ -116,30 +112,17 @@ export function QuestionCard({
           ) : null}
         </Card.Content>
 
-        {onMarkRead ? (
-          <Card.Actions style={styles.cardActions}>
-            <Button
-              mode="text"
-              compact
-              icon="check-circle-outline"
-              onPress={onMarkRead}
-              loading={isMarkingRead}
-              disabled={isMarkingRead}
-              textColor="#4CAF50"
-            >
-              Mark Read
-            </Button>
-            <Button
-              mode="text"
-              compact
-              icon="arrow-right"
-              onPress={onPress}
-              contentStyle={styles.viewButtonContent}
-            >
-              View Answer
-            </Button>
-          </Card.Actions>
-        ) : null}
+        <Card.Actions style={styles.cardActions}>
+          <Button
+            mode="text"
+            compact
+            icon="arrow-right"
+            onPress={onPress}
+            contentStyle={styles.viewButtonContent}
+          >
+            Attempt Quiz
+          </Button>
+        </Card.Actions>
       </Card>
     </Pressable>
   );

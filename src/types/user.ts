@@ -35,6 +35,7 @@ export interface SubscriptionInfo {
 
 export interface Streak {
   count: number;
+  maxStreak: number;
   lastActiveDate: string | null;
 }
 

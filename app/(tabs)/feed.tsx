@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,12 +9,11 @@ import {
   Text,
   Button,
   ActivityIndicator,
-  Snackbar,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFeed, useMarkRead } from '../../src/hooks/useFeed';
+import { useFeed } from '../../src/hooks/useFeed';
 import { useAuthStore } from '../../src/stores/authStore';
 import { StreakBadge, QuestionCard } from '../../src/components';
 import type { DailyFeedItem } from '../../src/types';
@@ -104,10 +103,6 @@ function FeedStreakHeader() {
 export default function FeedScreen() {
   const router = useRouter();
   const { data: feedItems, isLoading, isError, refetch, isRefetching } = useFeed();
-  const markReadMutation = useMarkRead();
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-
   const handlePressItem = useCallback(
     (item: DailyFeedItem) => {
       router.push({
@@ -118,35 +113,14 @@ export default function FeedScreen() {
     [router],
   );
 
-  const handleMarkRead = useCallback(
-    (dailySelectionId: string, topicId: string) => {
-      markReadMutation.mutate({ dailySelectionId, topicId }, {
-        onSuccess: () => {
-          setSnackbarMessage('Marked as read! Streak updated.');
-          setSnackbarVisible(true);
-        },
-        onError: () => {
-          setSnackbarMessage('Failed to mark as read. Please try again.');
-          setSnackbarVisible(true);
-        },
-      });
-    },
-    [markReadMutation],
-  );
-
   const renderItem = useCallback(
     ({ item }: { item: DailyFeedItem }) => (
       <QuestionCard
         item={item}
         onPress={() => handlePressItem(item)}
-        onMarkRead={() => handleMarkRead(item.dailySelectionId, item.topic._id)}
-        isMarkingRead={
-          markReadMutation.isPending &&
-          markReadMutation.variables?.dailySelectionId === item.dailySelectionId
-        }
       />
     ),
-    [handlePressItem, handleMarkRead, markReadMutation.isPending, markReadMutation.variables],
+    [handlePressItem],
   );
 
   const keyExtractor = useCallback(
@@ -196,17 +170,6 @@ export default function FeedScreen() {
         ItemSeparatorComponent={ItemSeparator}
       />
 
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-        action={{
-          label: 'OK',
-          onPress: () => setSnackbarVisible(false),
-        }}
-      >
-        {snackbarMessage}
-      </Snackbar>
     </SafeAreaView>
   );
 }
