@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   difficultyChip: {
-    height: 28,
+    height: 30,
   },
   difficultyText: {
     fontSize: 11,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tagChip: {
-    height: 26,
+    height: 28,
   },
   tagText: {
     fontSize: 11,

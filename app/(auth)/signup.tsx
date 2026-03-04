@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import {
   Text,
@@ -114,13 +115,12 @@ export default function SignupScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <MaterialCommunityIcons
-              name="lightning-bolt"
-              size={48}
-              color="#6200EE"
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logo}
             />
             <Text variant="headlineLarge" style={styles.title}>
-              Join Micro Learner
+              Join StackDaily
             </Text>
             <Text variant="bodyLarge" style={styles.subtitle}>
               Start your learning journey today
@@ -284,10 +284,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 18,
+  },
   title: {
     fontWeight: '700',
     color: '#6200EE',
-    marginTop: 8,
+    marginTop: 12,
   },
   subtitle: {
     color: '#666',

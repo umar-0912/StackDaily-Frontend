@@ -28,17 +28,17 @@ import type { DailyFeedItem } from '../../../src/types';
 
 const markdownStyles = {
   body: { color: '#333', fontSize: 15, lineHeight: 24 },
-  heading1: { color: '#6200EE', fontSize: 22, fontWeight: '700' as const, marginBottom: 8, marginTop: 16 },
-  heading2: { color: '#6200EE', fontSize: 19, fontWeight: '600' as const, marginBottom: 6, marginTop: 14 },
-  heading3: { color: '#6200EE', fontSize: 17, fontWeight: '600' as const, marginBottom: 4, marginTop: 12 },
-  code_inline: { backgroundColor: '#F0EAF8', color: '#6200EE', paddingHorizontal: 4, borderRadius: 4, fontSize: 14 },
+  heading1: { color: '#1A1A2E', fontSize: 22, fontWeight: '700' as const, marginBottom: 8, marginTop: 16 },
+  heading2: { color: '#1A1A2E', fontSize: 19, fontWeight: '600' as const, marginBottom: 6, marginTop: 14 },
+  heading3: { color: '#1A1A2E', fontSize: 17, fontWeight: '600' as const, marginBottom: 4, marginTop: 12 },
+  code_inline: { backgroundColor: '#F0F4F8', color: '#0D47A1', paddingHorizontal: 4, borderRadius: 4, fontSize: 14 },
   code_block: { backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8, fontSize: 13, color: '#333' },
   fence: { backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8, fontSize: 13, color: '#333' },
   bullet_list: { marginVertical: 4 },
   ordered_list: { marginVertical: 4 },
   list_item: { marginVertical: 2 },
   strong: { fontWeight: '700' as const },
-  blockquote: { backgroundColor: '#F5F5F5', borderLeftWidth: 3, borderLeftColor: '#6200EE', paddingLeft: 12, paddingVertical: 8, marginVertical: 8 },
+  blockquote: { backgroundColor: '#F5F5F5', borderLeftWidth: 3, borderLeftColor: '#03DAC6', paddingLeft: 12, paddingVertical: 8, marginVertical: 8 },
 };
 
 function AnswerSection({ answer }: { answer: { content: string; generatedAt: string } }) {
@@ -51,9 +51,9 @@ function AnswerSection({ answer }: { answer: { content: string; generatedAt: str
     <Surface style={styles.answerSection} elevation={1}>
       <View style={styles.answerHeader}>
         <View style={styles.answerHeaderLeft}>
-          <MaterialCommunityIcons name="robot-outline" size={22} color="#6200EE" />
+          <MaterialCommunityIcons name="lightbulb-outline" size={22} color="#03DAC6" />
           <Text variant="titleMedium" style={styles.answerTitle}>
-            AI Answer
+            Answer
           </Text>
         </View>
       </View>
@@ -263,7 +263,7 @@ export default function QuestionDetailScreen() {
                 <MaterialCommunityIcons
                   name={topicIcon}
                   size={24}
-                  color="#6200EE"
+                  color="#1A1A2E"
                 />
                 <Text variant="titleMedium" style={styles.topicName}>
                   {feedItem.topic.name}
@@ -295,7 +295,7 @@ export default function QuestionDetailScreen() {
               <MaterialCommunityIcons
                 name="help-circle-outline"
                 size={22}
-                color="#6200EE"
+                color="#03DAC6"
               />
               <Text variant="labelLarge" style={styles.questionLabel}>
                 Question
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   },
   topicName: {
     fontWeight: '600',
-    color: '#6200EE',
+    color: '#1A1A2E',
   },
   difficultyChip: {
     height: 30,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   questionLabel: {
-    color: '#6200EE',
+    color: '#03DAC6',
     fontWeight: '600',
   },
   questionText: {
@@ -472,11 +472,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tagChip: {
-    backgroundColor: '#F0EAF8',
+    backgroundColor: '#E0F7FA',
   },
   tagText: {
     fontSize: 12,
-    color: '#6200EE',
+    color: '#00796B',
   },
   answerSection: {
     borderRadius: 12,
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   },
   answerTitle: {
     fontWeight: '600',
-    color: '#6200EE',
+    color: '#1A1A2E',
   },
   answerDivider: {
     marginVertical: 12,

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Micro Learner",
-    "slug": "micro-learner-app",
+    "name": "StackDaily",
+    "slug": "stackdaily",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "microlearner",
+    "scheme": "stackdaily",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -14,16 +14,20 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.microlearner.app"
+      "bundleIdentifier": "com.stackdaily.app"
     },
     "android": {
-      "package": "com.microlearner.app",
+      "package": "com.stackdaily.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#6200EE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "notification": {
+        "icon": "./assets/notification-icon.png",
+        "color": "#6200EE"
       },
       "predictiveBackGestureEnabled": false
     },

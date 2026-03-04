@@ -145,7 +145,7 @@ export default function TopicsScreen() {
                   color={theme.colors.primary}
                 />
                 <View style={styles.topicInfo}>
-                  <Text variant="titleMedium" style={styles.topicName}>
+                  <Text variant="titleMedium" style={styles.topicName} numberOfLines={1}>
                     {item.name}
                   </Text>
                   <Chip
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: {
     fontSize: 11,
-    lineHeight: 14,
+    lineHeight: 16,
   },
   topicDescription: {
     lineHeight: 20,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statusChip: {
-    height: 22,
+    height: 26,
   },
   topicProgressBar: {
     height: 4,

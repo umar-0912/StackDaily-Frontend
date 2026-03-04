@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { ActivityIndicator, Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../src/stores/authStore';
@@ -21,10 +21,14 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" />
+      <Image
+        source={require('../assets/icon.png')}
+        style={styles.logo}
+      />
       <Text style={styles.text} variant="bodyLarge">
-        Micro Learner
+        StackDaily
       </Text>
+      <ActivityIndicator size="small" color="#6200EE" />
     </View>
   );
 }
@@ -37,9 +41,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     gap: 16,
   },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
   text: {
-    marginTop: 8,
+    marginTop: 12,
     color: '#6200EE',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 24,
   },
 });
