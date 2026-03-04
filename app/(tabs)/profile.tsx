@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -202,23 +201,6 @@ export default function ProfileScreen() {
       showSnackbar('Failed to send test notification');
     },
   });
-
-  // Refresh subscription status when app comes back to foreground
-  // (e.g. after completing Razorpay checkout in browser)
-  const appState = useRef(AppState.currentState);
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.subscription] });
-        queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
-      }
-      appState.current = nextAppState;
-    });
-    return () => subscription.remove();
-  }, [queryClient]);
 
   // Pull-to-refresh
   const onRefresh = useCallback(async () => {

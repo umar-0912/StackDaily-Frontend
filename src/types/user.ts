@@ -100,6 +100,7 @@ export interface UpdateFcmTokenRequest {
 export interface SubscribeResponse {
   shortUrl: string;
   subscriptionId: string;
+  razorpayKeyId: string;
 }
 
 export interface CancelSubscriptionResponse {
