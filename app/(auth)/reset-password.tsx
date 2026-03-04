@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,28 +15,19 @@ import {
   Surface,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Link } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../../src/hooks/useAuth';
-import { useAuthStore } from '../../src/stores/authStore';
+import { authApi } from '../../src/api/auth';
 
-const signupSchema = z.object({
-  username: z
+const resetSchema = z.object({
+  otp: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username must be at most 30 characters')
-    .regex(
-      /^[a-zA-Z0-9]+$/,
-      'Username can only contain letters and numbers',
-    ),
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
-  password: z
+    .length(6, 'Code must be exactly 6 digits')
+    .regex(/^\d+$/, 'Code must contain only numbers'),
+  newPassword: z
     .string()
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -44,28 +35,30 @@ const signupSchema = z.object({
     .regex(/[0-9]/, 'Password must contain at least one number'),
 });
 
-type SignupFormData = z.infer<typeof signupSchema>;
+type ResetFormData = z.infer<typeof resetSchema>;
 
-export default function SignupScreen() {
+export default function ResetPasswordScreen() {
   const router = useRouter();
-  const { signup, isSubmitting, error, clearError } = useAuth();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
     watch,
-  } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-    },
+  } = useForm<ResetFormData>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { otp: '', newPassword: '' },
   });
 
-  const passwordValue = watch('password');
+  const passwordValue = watch('newPassword');
 
   const passwordChecks = {
     length: (passwordValue?.length ?? 0) >= 8,
@@ -74,24 +67,66 @@ export default function SignupScreen() {
     number: /[0-9]/.test(passwordValue ?? ''),
   };
 
-  const onSubmit = async (data: SignupFormData) => {
-    clearError();
+  // Redirect to forgot-password if no email param (e.g. direct navigation)
+  useEffect(() => {
+    if (!email) {
+      router.replace('/(auth)/forgot-password');
+    }
+  }, [email, router]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
+
+  const onSubmit = async (data: ResetFormData) => {
+    if (!email) return;
+    setIsSubmitting(true);
+    setError(null);
     try {
-      await signup({
-        username: data.username,
-        email: data.email,
-        password: data.password,
+      await authApi.resetPassword({
+        email,
+        otp: data.otp,
+        newPassword: data.newPassword,
       });
-      const state = useAuthStore.getState();
-      if (state.requiresVerification) {
-        router.replace('/(auth)/verify-email');
-      } else {
-        router.replace('/(tabs)/feed');
-      }
-    } catch {
-      // Error is handled by the auth store and displayed below
+      setSuccess('Password reset successfully! Redirecting to login...');
+      redirectTimerRef.current = setTimeout(
+        () => router.replace('/(auth)/login'),
+        2000,
+      );
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || 'Reset failed. Please try again.';
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const handleResend = useCallback(async () => {
+    if (!email || resendCooldown > 0) return;
+    setError(null);
+    try {
+      await authApi.resendOtp({ email, type: 'password_reset' });
+      setSuccess('A new code has been sent to your email.');
+      setResendCooldown(60);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setSuccess(null), 4000);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || 'Failed to resend code. Please try again.';
+      setError(msg);
+    }
+  }, [email, resendCooldown]);
 
   const renderPasswordHint = (label: string, met: boolean) => (
     <View style={styles.hintRow} key={label}>
@@ -108,6 +143,9 @@ export default function SignupScreen() {
       </Text>
     </View>
   );
+
+  // Don't render form while redirecting due to missing email
+  if (!email) return null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -126,18 +164,17 @@ export default function SignupScreen() {
               style={styles.logo}
             />
             <Text variant="headlineLarge" style={styles.title}>
-              Join StackDaily
+              Reset Password
             </Text>
             <Text variant="bodyLarge" style={styles.subtitle}>
-              Start your learning journey today
+              Enter the code sent to
+            </Text>
+            <Text variant="bodyLarge" style={styles.emailText}>
+              {email}
             </Text>
           </View>
 
           <Surface style={styles.formCard} elevation={2}>
-            <Text variant="titleLarge" style={styles.formTitle}>
-              Create Account
-            </Text>
-
             {error ? (
               <Surface style={styles.errorBanner} elevation={0}>
                 <MaterialCommunityIcons
@@ -149,57 +186,37 @@ export default function SignupScreen() {
               </Surface>
             ) : null}
 
-            <Controller
-              control={control}
-              name="username"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    label="Username"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    mode="outlined"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.username}
-                    left={<TextInput.Icon icon="account-outline" />}
-                    style={styles.input}
-                  />
-                  {errors.username ? (
-                    <HelperText type="error" visible={!!errors.username}>
-                      {errors.username.message}
-                    </HelperText>
-                  ) : (
-                    <HelperText type="info" visible>
-                      3-30 characters, letters and numbers only
-                    </HelperText>
-                  )}
-                </View>
-              )}
-            />
+            {success ? (
+              <Surface style={styles.successBanner} elevation={0}>
+                <MaterialCommunityIcons
+                  name="check-circle"
+                  size={20}
+                  color="#4CAF50"
+                />
+                <Text style={styles.successText}>{success}</Text>
+              </Surface>
+            ) : null}
 
             <Controller
               control={control}
-              name="email"
+              name="otp"
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={styles.inputWrapper}>
                   <TextInput
-                    label="Email"
+                    label="Reset Code"
                     value={value}
-                    onChangeText={onChange}
+                    onChangeText={(text) => onChange(text.replace(/\D/g, '').slice(0, 6))}
                     onBlur={onBlur}
                     mode="outlined"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    error={!!errors.email}
-                    left={<TextInput.Icon icon="email-outline" />}
-                    style={styles.input}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    error={!!errors.otp}
+                    left={<TextInput.Icon icon="shield-key-outline" />}
+                    style={[styles.input, styles.otpInput]}
                   />
-                  {errors.email ? (
-                    <HelperText type="error" visible={!!errors.email}>
-                      {errors.email.message}
+                  {errors.otp ? (
+                    <HelperText type="error" visible={!!errors.otp}>
+                      {errors.otp.message}
                     </HelperText>
                   ) : null}
                 </View>
@@ -208,17 +225,17 @@ export default function SignupScreen() {
 
             <Controller
               control={control}
-              name="password"
+              name="newPassword"
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={styles.inputWrapper}>
                   <TextInput
-                    label="Password"
+                    label="New Password"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     mode="outlined"
                     secureTextEntry={secureTextEntry}
-                    error={!!errors.password}
+                    error={!!errors.newPassword}
                     left={<TextInput.Icon icon="lock-outline" />}
                     right={
                       <TextInput.Icon
@@ -230,14 +247,8 @@ export default function SignupScreen() {
                   />
                   <View style={styles.hintsContainer}>
                     {renderPasswordHint('At least 8 characters', passwordChecks.length)}
-                    {renderPasswordHint(
-                      'One uppercase letter',
-                      passwordChecks.uppercase,
-                    )}
-                    {renderPasswordHint(
-                      'One lowercase letter',
-                      passwordChecks.lowercase,
-                    )}
+                    {renderPasswordHint('One uppercase letter', passwordChecks.uppercase)}
+                    {renderPasswordHint('One lowercase letter', passwordChecks.lowercase)}
                     {renderPasswordHint('One number', passwordChecks.number)}
                   </View>
                 </View>
@@ -248,24 +259,34 @@ export default function SignupScreen() {
               mode="contained"
               onPress={handleSubmit(onSubmit)}
               loading={isSubmitting}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!success}
               style={styles.submitButton}
               contentStyle={styles.submitButtonContent}
               labelStyle={styles.submitButtonLabel}
             >
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+              {isSubmitting ? 'Resetting...' : 'Reset Password'}
+            </Button>
+
+            <Button
+              mode="text"
+              onPress={handleResend}
+              disabled={resendCooldown > 0}
+              style={styles.resendButton}
+            >
+              {resendCooldown > 0
+                ? `Resend Code (${resendCooldown}s)`
+                : 'Resend Code'}
             </Button>
           </Surface>
 
           <View style={styles.footer}>
-            <Text variant="bodyMedium" style={styles.footerText}>
-              Already have an account?{' '}
-            </Text>
-            <Link href="/(auth)/login" asChild>
-              <Button mode="text" compact>
-                Sign In
-              </Button>
-            </Link>
+            <Button
+              mode="text"
+              onPress={() => router.replace('/(auth)/login')}
+              compact
+            >
+              Back to Login
+            </Button>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -288,7 +309,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   logo: {
     width: 80,
@@ -304,15 +325,15 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  emailText: {
+    color: '#6200EE',
+    fontWeight: '600',
+    marginTop: 2,
+  },
   formCard: {
     borderRadius: 16,
     padding: 24,
     backgroundColor: '#FFFFFF',
-  },
-  formTitle: {
-    fontWeight: '600',
-    marginBottom: 20,
-    textAlign: 'center',
   },
   errorBanner: {
     flexDirection: 'row',
@@ -328,11 +349,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  successText: {
+    color: '#2E7D32',
+    fontSize: 14,
+    flex: 1,
+  },
   inputWrapper: {
-    marginBottom: 4,
+    marginBottom: 8,
   },
   input: {
     backgroundColor: '#FFFFFF',
+  },
+  otpInput: {
+    fontSize: 24,
+    letterSpacing: 8,
+    textAlign: 'center',
   },
   hintsContainer: {
     marginTop: 8,
@@ -362,13 +402,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
+  resendButton: {
+    marginTop: 12,
   },
-  footerText: {
-    color: '#666',
+  footer: {
+    alignItems: 'center',
+    marginTop: 24,
   },
 });

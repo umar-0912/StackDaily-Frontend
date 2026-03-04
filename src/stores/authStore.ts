@@ -18,12 +18,15 @@ interface AuthState {
   isRestoring: boolean;
   isSubmitting: boolean;
   error: string | null;
+  requiresVerification: boolean;
+  pendingVerificationEmail: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: User) => void;
+  setVerified: () => void;
   resetAuth: () => void;
   clearError: () => void;
 }
@@ -52,20 +55,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isRestoring: true,
   isSubmitting: false,
   error: null,
+  requiresVerification: false,
+  pendingVerificationEmail: null,
 
   login: async (email: string, password: string) => {
     set({ isSubmitting: true, error: null });
     try {
       const { data } = await authApi.login({ email, password });
       await tokenStorage.setTokens(data.accessToken, data.refreshToken);
-      set({
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        isAuthenticated: true,
-        isSubmitting: false,
-        error: null,
-      });
+
+      if (!data.user.isEmailVerified) {
+        set({
+          user: data.user,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          isAuthenticated: false,
+          requiresVerification: true,
+          pendingVerificationEmail: data.user.email,
+          isSubmitting: false,
+          error: null,
+        });
+      } else {
+        set({
+          user: data.user,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          isAuthenticated: true,
+          requiresVerification: false,
+          pendingVerificationEmail: null,
+          isSubmitting: false,
+          error: null,
+        });
+      }
     } catch (error) {
       set({
         isSubmitting: false,
@@ -83,14 +104,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         responseData.accessToken,
         responseData.refreshToken,
       );
-      set({
-        user: responseData.user,
-        accessToken: responseData.accessToken,
-        refreshToken: responseData.refreshToken,
-        isAuthenticated: true,
-        isSubmitting: false,
-        error: null,
-      });
+
+      if (!responseData.user.isEmailVerified) {
+        set({
+          user: responseData.user,
+          accessToken: responseData.accessToken,
+          refreshToken: responseData.refreshToken,
+          isAuthenticated: false,
+          requiresVerification: true,
+          pendingVerificationEmail: responseData.user.email,
+          isSubmitting: false,
+          error: null,
+        });
+      } else {
+        set({
+          user: responseData.user,
+          accessToken: responseData.accessToken,
+          refreshToken: responseData.refreshToken,
+          isAuthenticated: true,
+          requiresVerification: false,
+          pendingVerificationEmail: null,
+          isSubmitting: false,
+          error: null,
+        });
+      }
     } catch (error) {
       set({
         isSubmitting: false,
@@ -110,6 +147,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isRestoring: false,
       isSubmitting: false,
       error: null,
+      requiresVerification: false,
+      pendingVerificationEmail: null,
     });
   },
 
@@ -127,13 +166,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Try to fetch the user profile with the stored token
       const { data: user } = await usersApi.getProfile();
 
-      set({
-        user,
-        accessToken,
-        refreshToken,
-        isAuthenticated: true,
-        isRestoring: false,
-      });
+      if (!user.isEmailVerified) {
+        set({
+          user,
+          accessToken,
+          refreshToken,
+          isAuthenticated: false,
+          requiresVerification: true,
+          pendingVerificationEmail: user.email,
+          isRestoring: false,
+        });
+      } else {
+        set({
+          user,
+          accessToken,
+          refreshToken,
+          isAuthenticated: true,
+          requiresVerification: false,
+          pendingVerificationEmail: null,
+          isRestoring: false,
+        });
+      }
     } catch {
       // Token may be expired or invalid
       await tokenStorage.clearTokens();
@@ -143,6 +196,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         refreshToken: null,
         isAuthenticated: false,
         isRestoring: false,
+        requiresVerification: false,
+        pendingVerificationEmail: null,
       });
     }
   },
@@ -155,6 +210,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user });
   },
 
+  setVerified: () => {
+    set({
+      requiresVerification: false,
+      pendingVerificationEmail: null,
+      isAuthenticated: true,
+    });
+  },
+
   resetAuth: () => {
     set({
       user: null,
@@ -164,6 +227,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isRestoring: false,
       isSubmitting: false,
       error: null,
+      requiresVerification: false,
+      pendingVerificationEmail: null,
     });
   },
 

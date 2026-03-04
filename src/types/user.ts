@@ -52,6 +52,7 @@ export interface User {
   username: string;
   role: UserRole;
   isActive: boolean;
+  isEmailVerified: boolean;
   subscribedTopics: PopulatedTopic[];
   topicSubscriptionHistory: string[];
   streak: Streak;
@@ -104,5 +105,29 @@ export interface SubscribeResponse {
 }
 
 export interface CancelSubscriptionResponse {
+  message: string;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
+export interface ResendOtpRequest {
+  email: string;
+  type: 'email_verification' | 'password_reset';
+}
+
+export interface MessageResponse {
   message: string;
 }

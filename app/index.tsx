@@ -8,16 +8,19 @@ export default function Index() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isRestoring = useAuthStore((state) => state.isRestoring);
+  const requiresVerification = useAuthStore((state) => state.requiresVerification);
 
   useEffect(() => {
     if (isRestoring) return;
 
-    if (isAuthenticated) {
+    if (requiresVerification) {
+      router.replace('/(auth)/verify-email');
+    } else if (isAuthenticated) {
       router.replace('/(tabs)/feed');
     } else {
       router.replace('/(auth)/login');
     }
-  }, [isAuthenticated, isRestoring, router]);
+  }, [isAuthenticated, isRestoring, requiresVerification, router]);
 
   return (
     <View style={styles.container}>

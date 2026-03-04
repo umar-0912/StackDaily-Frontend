@@ -15,53 +15,51 @@ import {
   Surface,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../../src/hooks/useAuth';
-import { useAuthStore } from '../../src/stores/authStore';
+import { authApi } from '../../src/api/auth';
 
-const loginSchema = z.object({
+const forgotSchema = z.object({
   email: z
     .string()
     .min(1, 'Email is required')
     .email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type ForgotFormData = z.infer<typeof forgotSchema>;
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const { login, isSubmitting, error, clearError } = useAuth();
-  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+  } = useForm<ForgotFormData>({
+    resolver: zodResolver(forgotSchema),
+    defaultValues: { email: '' },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    clearError();
+  const onSubmit = async (data: ForgotFormData) => {
+    setIsSubmitting(true);
+    setError(null);
     try {
-      await login(data.email, data.password);
-      const state = useAuthStore.getState();
-      if (state.requiresVerification) {
-        router.replace('/(auth)/verify-email');
-      } else {
-        router.replace('/(tabs)/feed');
-      }
-    } catch {
-      // Error is handled by the auth store and displayed below
+      await authApi.forgotPassword({ email: data.email });
+      router.push({
+        pathname: '/(auth)/reset-password',
+        params: { email: data.email },
+      });
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || 'Something went wrong. Please try again.';
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,18 +80,14 @@ export default function LoginScreen() {
               style={styles.logo}
             />
             <Text variant="headlineLarge" style={styles.title}>
-              StackDaily
+              Forgot Password
             </Text>
             <Text variant="bodyLarge" style={styles.subtitle}>
-              Learn something new every day
+              Enter your email and we'll send you a reset code
             </Text>
           </View>
 
           <Surface style={styles.formCard} elevation={2}>
-            <Text variant="titleLarge" style={styles.formTitle}>
-              Welcome Back
-            </Text>
-
             {error ? (
               <Surface style={styles.errorBanner} elevation={0}>
                 <MaterialCommunityIcons
@@ -132,46 +126,6 @@ export default function LoginScreen() {
               )}
             />
 
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    label="Password"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    mode="outlined"
-                    secureTextEntry={secureTextEntry}
-                    error={!!errors.password}
-                    left={<TextInput.Icon icon="lock-outline" />}
-                    right={
-                      <TextInput.Icon
-                        icon={secureTextEntry ? 'eye-off' : 'eye'}
-                        onPress={() => setSecureTextEntry(!secureTextEntry)}
-                      />
-                    }
-                    style={styles.input}
-                  />
-                  {errors.password ? (
-                    <HelperText type="error" visible={!!errors.password}>
-                      {errors.password.message}
-                    </HelperText>
-                  ) : null}
-                </View>
-              )}
-            />
-
-            <Button
-              mode="text"
-              compact
-              onPress={() => router.push('/(auth)/forgot-password')}
-              style={styles.forgotButton}
-            >
-              Forgot Password?
-            </Button>
-
             <Button
               mode="contained"
               onPress={handleSubmit(onSubmit)}
@@ -181,19 +135,18 @@ export default function LoginScreen() {
               contentStyle={styles.submitButtonContent}
               labelStyle={styles.submitButtonLabel}
             >
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isSubmitting ? 'Sending...' : 'Send Reset Code'}
             </Button>
           </Surface>
 
           <View style={styles.footer}>
-            <Text variant="bodyMedium" style={styles.footerText}>
-              Don't have an account?{' '}
-            </Text>
-            <Link href="/(auth)/signup" asChild>
-              <Button mode="text" compact>
-                Sign Up
-              </Button>
-            </Link>
+            <Button
+              mode="text"
+              onPress={() => router.back()}
+              compact
+            >
+              Back to Login
+            </Button>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -231,16 +184,12 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#666',
     marginTop: 4,
+    textAlign: 'center',
   },
   formCard: {
     borderRadius: 16,
     padding: 24,
     backgroundColor: '#FFFFFF',
-  },
-  formTitle: {
-    fontWeight: '600',
-    marginBottom: 20,
-    textAlign: 'center',
   },
   errorBanner: {
     flexDirection: 'row',
@@ -262,12 +211,8 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#FFFFFF',
   },
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginTop: 4,
-  },
   submitButton: {
-    marginTop: 8,
+    marginTop: 16,
     borderRadius: 8,
   },
   submitButtonContent: {
@@ -278,12 +223,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 24,
-  },
-  footerText: {
-    color: '#666',
   },
 });

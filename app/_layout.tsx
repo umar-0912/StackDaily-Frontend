@@ -47,6 +47,7 @@ export default function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isRestoring = useAuthStore((state) => state.isRestoring);
+  const requiresVerification = useAuthStore((state) => state.requiresVerification);
   const router = useRouter();
 
   const notificationReceivedRef = useRef<Subscription | null>(null);
@@ -56,14 +57,16 @@ export default function RootLayout() {
     restoreSession();
   }, [restoreSession]);
 
-  // Auth state listener: redirect to login on logout, clear stale query data
+  // Auth state listener: redirect based on auth state
   useEffect(() => {
     if (isRestoring) return;
-    if (!isAuthenticated) {
+    if (requiresVerification) {
+      router.replace('/(auth)/verify-email');
+    } else if (!isAuthenticated) {
       queryClient.clear();
       router.replace('/(auth)/login');
     }
-  }, [isAuthenticated, isRestoring]);
+  }, [isAuthenticated, isRestoring, requiresVerification]);
 
   // Register for push notifications after authentication
   useEffect(() => {
