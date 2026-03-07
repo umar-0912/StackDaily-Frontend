@@ -4,6 +4,11 @@ import { authApi } from '../api/auth';
 import { usersApi } from '../api/users';
 import type { User, SignupRequest } from '../types';
 import { AxiosError } from 'axios';
+import {
+  GoogleSignin,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 interface ApiErrorResponse {
   message: string;
@@ -22,6 +27,7 @@ interface AuthState {
   pendingVerificationEmail: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (data: SignupRequest) => Promise<void>;
+  googleSignIn: () => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
@@ -129,6 +135,59 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch (error) {
+      set({
+        isSubmitting: false,
+        error: getErrorMessage(error),
+      });
+      throw error;
+    }
+  },
+
+  googleSignIn: async () => {
+    set({ isSubmitting: true, error: null });
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        // User cancelled — silently return
+        set({ isSubmitting: false });
+        return;
+      }
+
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        set({ isSubmitting: false, error: 'Failed to get Google ID token.' });
+        return;
+      }
+
+      // Send ID token to backend for verification + login/signup
+      const { data } = await authApi.googleSignIn({ idToken });
+      await tokenStorage.setTokens(data.accessToken, data.refreshToken);
+
+      // Google users are always verified — go straight to authenticated
+      set({
+        user: data.user,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        isAuthenticated: true,
+        requiresVerification: false,
+        pendingVerificationEmail: null,
+        isSubmitting: false,
+        error: null,
+      });
+    } catch (error: unknown) {
+      // Handle Google Sign-In specific cancellation
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code: string }).code === statusCodes.SIGN_IN_CANCELLED
+      ) {
+        set({ isSubmitting: false });
+        return;
+      }
+
       set({
         isSubmitting: false,
         error: getErrorMessage(error),

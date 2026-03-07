@@ -8,6 +8,7 @@ import type {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   ResendOtpRequest,
+  GoogleSignInRequest,
   MessageResponse,
 } from '../types';
 
@@ -38,4 +39,7 @@ export const authApi = {
 
   resendOtp: (data: ResendOtpRequest) =>
     apiClient.post<MessageResponse>('/auth/resend-otp', data),
+
+  googleSignIn: (data: GoogleSignInRequest) =>
+    apiClient.post<AuthResponse>('/auth/google', data),
 };

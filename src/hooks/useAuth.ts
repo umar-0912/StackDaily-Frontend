@@ -11,6 +11,7 @@ export function useAuth() {
     error,
     login,
     signup,
+    googleSignIn,
     logout,
     restoreSession,
     clearError,
@@ -30,6 +31,10 @@ export function useAuth() {
     [signup],
   );
 
+  const handleGoogleSignIn = useCallback(async () => {
+    await googleSignIn();
+  }, [googleSignIn]);
+
   const handleLogout = useCallback(async () => {
     await logout();
   }, [logout]);
@@ -46,6 +51,7 @@ export function useAuth() {
     error,
     login: handleLogin,
     signup: handleSignup,
+    googleSignIn: handleGoogleSignIn,
     logout: handleLogout,
     restoreSession: handleRestoreSession,
     clearError,

@@ -48,7 +48,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signup, isSubmitting, error, clearError } = useAuth();
+  const { signup, googleSignIn, isSubmitting, error, clearError } = useAuth();
   const [secureTextEntry, setSecureTextEntry] = useState(true);
 
   const {
@@ -86,6 +86,19 @@ export default function SignupScreen() {
       if (state.requiresVerification) {
         router.replace('/(auth)/verify-email');
       } else {
+        router.replace('/(tabs)/feed');
+      }
+    } catch {
+      // Error is handled by the auth store and displayed below
+    }
+  };
+
+  const onGoogleSignIn = async () => {
+    clearError();
+    try {
+      await googleSignIn();
+      const state = useAuthStore.getState();
+      if (state.isAuthenticated) {
         router.replace('/(tabs)/feed');
       }
     } catch {
@@ -255,6 +268,24 @@ export default function SignupScreen() {
             >
               {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </Button>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Button
+              mode="outlined"
+              onPress={onGoogleSignIn}
+              disabled={isSubmitting}
+              icon="google"
+              style={styles.googleButton}
+              contentStyle={styles.submitButtonContent}
+              labelStyle={styles.googleButtonLabel}
+            >
+              Continue with Google
+            </Button>
           </Surface>
 
           <View style={styles.footer}>
@@ -361,6 +392,31 @@ const styles = StyleSheet.create({
   submitButtonLabel: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#999',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  googleButton: {
+    borderRadius: 8,
+    borderColor: '#DADCE0',
+  },
+  googleButtonLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#444',
   },
   footer: {
     flexDirection: 'row',

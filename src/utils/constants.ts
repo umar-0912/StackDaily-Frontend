@@ -1,5 +1,9 @@
 import { Platform } from 'react-native';
 
+// Google OAuth Web Client ID — used by @react-native-google-signin
+// Set this to your GCP Web OAuth Client ID
+export const GOOGLE_WEB_CLIENT_ID = '409646617319-pqldv1erphdeje7kr6bi9komt2mna11h.apps.googleusercontent.com';
+
 const getDevApiUrl = (): string => {
   // Point to deployed backend for Expo Go testing
   // For local backend: use your Mac's IP (e.g. http://192.168.x.x:3000/api/v1)

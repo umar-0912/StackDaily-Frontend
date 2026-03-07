@@ -5,6 +5,7 @@ import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { Subscription } from 'expo-notifications';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useAuthStore } from '../src/stores/authStore';
 import {
   registerForPushNotifications,
@@ -12,6 +13,7 @@ import {
   addNotificationReceivedListener,
   addNotificationResponseListener,
 } from '../src/utils/notifications';
+import { GOOGLE_WEB_CLIENT_ID } from '../src/utils/constants';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +54,16 @@ export default function RootLayout() {
 
   const notificationReceivedRef = useRef<Subscription | null>(null);
   const notificationResponseRef = useRef<Subscription | null>(null);
+
+  // Configure Google Sign-In
+  useEffect(() => {
+    if (GOOGLE_WEB_CLIENT_ID) {
+      GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: false,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     restoreSession();

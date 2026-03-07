@@ -46,6 +46,11 @@ export interface PopulatedTopic {
   icon?: string;
 }
 
+export enum AuthProvider {
+  LOCAL = 'local',
+  GOOGLE = 'google',
+}
+
 export interface User {
   _id: string;
   email: string;
@@ -53,6 +58,7 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   isEmailVerified: boolean;
+  authProvider?: AuthProvider;
   subscribedTopics: PopulatedTopic[];
   topicSubscriptionHistory: string[];
   streak: Streak;
@@ -126,6 +132,10 @@ export interface ResetPasswordRequest {
 export interface ResendOtpRequest {
   email: string;
   type: 'email_verification' | 'password_reset';
+}
+
+export interface GoogleSignInRequest {
+  idToken: string;
 }
 
 export interface MessageResponse {
