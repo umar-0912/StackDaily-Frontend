@@ -92,10 +92,11 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 function FeedStreakHeader() {
   const user = useAuthStore((state) => state.user);
   const streakCount = user?.streak.count ?? 0;
+  const maxStreak = user?.streak.maxStreak ?? 0;
 
   return (
     <View style={styles.streakHeaderWrapper}>
-      <StreakBadge count={streakCount} size="small" />
+      <StreakBadge count={streakCount} maxStreak={maxStreak} size="small" />
     </View>
   );
 }
