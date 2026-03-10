@@ -24,14 +24,10 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useAuthStore } from '../../src/stores/authStore';
 
 const signupSchema = z.object({
-  username: z
+  name: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username must be at most 30 characters')
-    .regex(
-      /^[a-zA-Z0-9]+$/,
-      'Username can only contain letters and numbers',
-    ),
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be at most 50 characters'),
   email: z
     .string()
     .min(1, 'Email is required')
@@ -59,7 +55,7 @@ export default function SignupScreen() {
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      username: '',
+      name: '',
       email: '',
       password: '',
     },
@@ -78,7 +74,7 @@ export default function SignupScreen() {
     clearError();
     try {
       await signup({
-        username: data.username,
+        name: data.name,
         email: data.email,
         password: data.password,
       });
@@ -164,30 +160,26 @@ export default function SignupScreen() {
 
             <Controller
               control={control}
-              name="username"
+              name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={styles.inputWrapper}>
                   <TextInput
-                    label="Username"
+                    label="Full Name"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     mode="outlined"
-                    autoCapitalize="none"
+                    autoCapitalize="words"
                     autoCorrect={false}
-                    error={!!errors.username}
+                    error={!!errors.name}
                     left={<TextInput.Icon icon="account-outline" />}
                     style={styles.input}
                   />
-                  {errors.username ? (
-                    <HelperText type="error" visible={!!errors.username}>
-                      {errors.username.message}
+                  {errors.name ? (
+                    <HelperText type="error" visible={!!errors.name}>
+                      {errors.name.message}
                     </HelperText>
-                  ) : (
-                    <HelperText type="info" visible>
-                      3-30 characters, letters and numbers only
-                    </HelperText>
-                  )}
+                  ) : null}
                 </View>
               )}
             />

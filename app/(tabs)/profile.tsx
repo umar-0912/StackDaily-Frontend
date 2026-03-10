@@ -17,8 +17,6 @@ import {
   TextInput,
   HelperText,
   Dialog,
-  List,
-  Divider,
   Snackbar,
   useTheme,
 } from 'react-native-paper';
@@ -27,29 +25,22 @@ import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ProgressBar } from 'react-native-paper';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile, useUpdateProfile, useSubscriptionInfo } from '../../src/hooks/useProfile';
 import { useSubscribe, useCancelSubscription } from '../../src/hooks/usePayments';
-import { useNotificationHistory } from '../../src/hooks/useNotifications';
 import { useProgress } from '../../src/hooks/useProgress';
-import { notificationsApi } from '../../src/api/notifications';
 import { QUERY_KEYS } from '../../src/utils/constants';
 import { LoadingScreen, ErrorScreen, StreakBadge, TopicChip } from '../../src/components';
 import { SubscriptionPlan, SubscriptionStatus } from '../../src/types';
-import type { NotificationStatus } from '../../src/types';
 
 const editProfileSchema = z.object({
-  username: z
+  name: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username must be at most 30 characters')
-    .regex(
-      /^[a-zA-Z0-9]+$/,
-      'Username can only contain letters and numbers',
-    ),
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be at most 50 characters'),
   email: z
     .string()
     .min(1, 'Email is required')
@@ -57,31 +48,6 @@ const editProfileSchema = z.object({
 });
 
 type EditProfileFormData = z.infer<typeof editProfileSchema>;
-
-const NOTIFICATION_STATUS_COLORS: Record<NotificationStatus, string> = {
-  sent: '#4CAF50',
-  delivered: '#2196F3',
-  failed: '#F44336',
-  pending: '#9E9E9E',
-};
-
-const NOTIFICATION_STATUS_ICONS: Record<NotificationStatus, string> = {
-  sent: 'check-circle',
-  delivered: 'check-circle',
-  failed: 'close-circle',
-  pending: 'clock-outline',
-};
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function getStreakMessage(count: number, maxStreak: number): string {
   if (count === 0 && maxStreak > 0) {
@@ -114,10 +80,6 @@ export default function ProfileScreen() {
   const { data: profile, isLoading, isError, refetch } = useProfile();
   const updateProfileMutation = useUpdateProfile();
 
-  const [notificationPage, setNotificationPage] = useState(1);
-  const { data: notificationsData, isFetching: isNotificationsFetching } =
-    useNotificationHistory(notificationPage);
-
   const { data: subscriptionInfo } = useSubscriptionInfo();
   const { data: progressData } = useProgress();
   const subscribeMutation = useSubscribe();
@@ -126,7 +88,6 @@ export default function ProfileScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
   const [cancelSubDialogVisible, setCancelSubDialogVisible] = useState(false);
-  const [notificationsExpanded, setNotificationsExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Snackbar state
@@ -140,33 +101,6 @@ export default function ProfileScreen() {
 
   const displayUser = profile ?? user;
 
-  // Collected notification items across pages
-  const [allNotifications, setAllNotifications] = useState<
-    NonNullable<typeof notificationsData>['data']
-  >([]);
-
-  // Accumulate notifications when new page data arrives
-  useEffect(() => {
-    if (notificationsData?.data) {
-      if (notificationPage === 1) {
-        setAllNotifications(notificationsData.data);
-      } else {
-        setAllNotifications((prev) => {
-          const existingIds = new Set(prev.map((n) => n._id));
-          const newItems = notificationsData.data.filter(
-            (n) => !existingIds.has(n._id),
-          );
-          return [...prev, ...newItems];
-        });
-      }
-    }
-  }, [notificationsData, notificationPage]);
-
-  const hasMoreNotifications =
-    notificationsData?.meta
-      ? notificationsData.meta.page < notificationsData.meta.totalPages
-      : false;
-
   const {
     control,
     handleSubmit,
@@ -175,42 +109,27 @@ export default function ProfileScreen() {
   } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
-      username: '',
+      name: '',
       email: '',
     },
   });
 
-  // Fix 4: Reset form when profile data loads
   useEffect(() => {
     if (profile) {
       reset({
-        username: profile.username,
+        name: profile.name || profile.username,
         email: profile.email,
       });
     }
   }, [profile, reset]);
 
-  // Fix 3: Send test notification mutation
-  const sendTestMutation = useMutation({
-    mutationFn: () => notificationsApi.sendTest(),
-    onSuccess: () => {
-      showSnackbar('Test notification sent successfully');
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notificationHistory });
-    },
-    onError: () => {
-      showSnackbar('Failed to send test notification');
-    },
-  });
-
   // Pull-to-refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setNotificationPage(1);
     try {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.profile }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription }),
-        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notificationHistory }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progress }),
       ]);
     } finally {
@@ -220,7 +139,7 @@ export default function ProfileScreen() {
 
   const openEditModal = useCallback(() => {
     reset({
-      username: displayUser?.username ?? '',
+      name: displayUser?.name || displayUser?.username || '',
       email: displayUser?.email ?? '',
     });
     setEditModalVisible(true);
@@ -252,14 +171,9 @@ export default function ProfileScreen() {
     router.push('/(tabs)/topics');
   }, [router]);
 
-  const handleLoadMoreNotifications = useCallback(() => {
-    if (hasMoreNotifications && !isNotificationsFetching) {
-      setNotificationPage((prev) => prev + 1);
-    }
-  }, [hasMoreNotifications, isNotificationsFetching]);
-
-  const initials = displayUser?.username
-    ? displayUser.username.substring(0, 2).toUpperCase()
+  const displayName = displayUser?.name || displayUser?.username || '';
+  const initials = displayName
+    ? displayName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()
     : '??';
 
   if (isLoading && !user) {
@@ -297,7 +211,7 @@ export default function ProfileScreen() {
             style={{ backgroundColor: theme.colors.primary, marginBottom: 16 }}
           />
           <Text variant="headlineSmall" style={styles.username}>
-            {displayUser?.username ?? 'Unknown User'}
+            {displayName || 'Unknown User'}
           </Text>
           <Text variant="bodyMedium" style={[styles.email, { color: theme.colors.onSurfaceVariant }]}>
             {displayUser?.email ?? ''}
@@ -536,82 +450,6 @@ export default function ProfileScreen() {
           )}
         </Surface>
 
-        {/* Notification History */}
-        <Surface style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]} elevation={1}>
-          <List.Accordion
-            title="Notification History"
-            titleStyle={styles.sectionTitle}
-            expanded={notificationsExpanded}
-            onPress={() => setNotificationsExpanded(!notificationsExpanded)}
-            left={(props) => (
-              <List.Icon {...props} icon="bell-outline" />
-            )}
-            style={styles.accordion}
-          >
-            {allNotifications.length > 0 ? (
-              <>
-                {allNotifications.map((notification) => {
-                  const statusColor =
-                    NOTIFICATION_STATUS_COLORS[notification.status];
-                  const statusIcon =
-                    NOTIFICATION_STATUS_ICONS[notification.status];
-
-                  return (
-                    <View key={notification._id}>
-                      <List.Item
-                        title={`Status: ${notification.status}`}
-                        titleStyle={{ color: statusColor, fontWeight: '600' }}
-                        description={formatDate(notification.createdAt)}
-                        descriptionStyle={[styles.notificationDate, { color: theme.colors.onSurfaceVariant }]}
-                        left={(props) => (
-                          <List.Icon
-                            {...props}
-                            icon={statusIcon}
-                            color={statusColor}
-                          />
-                        )}
-                        style={styles.notificationItem}
-                      />
-                      <Divider />
-                    </View>
-                  );
-                })}
-                {hasMoreNotifications ? (
-                  <Button
-                    mode="text"
-                    onPress={handleLoadMoreNotifications}
-                    loading={isNotificationsFetching}
-                    disabled={isNotificationsFetching}
-                    style={styles.loadMoreButton}
-                    icon="chevron-down"
-                  >
-                    Load More
-                  </Button>
-                ) : null}
-              </>
-            ) : (
-              <View style={styles.noNotificationsContainer}>
-                <Text variant="bodyMedium" style={[styles.noNotificationsText, { color: theme.colors.onSurfaceVariant }]}>
-                  No notifications yet
-                </Text>
-              </View>
-            )}
-          </List.Accordion>
-
-          {/* Send Test Notification Button */}
-          <Button
-            mode="outlined"
-            onPress={() => sendTestMutation.mutate()}
-            loading={sendTestMutation.isPending}
-            disabled={sendTestMutation.isPending}
-            icon="bell-ring-outline"
-            style={styles.testNotificationButton}
-            compact
-          >
-            Send Test Notification
-          </Button>
-        </Surface>
-
         {/* Logout Button */}
         <Button
           mode="outlined"
@@ -653,24 +491,24 @@ export default function ProfileScreen() {
 
             <Controller
               control={control}
-              name="username"
+              name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={styles.inputWrapper}>
                   <TextInput
-                    label="Username"
+                    label="Full Name"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     mode="outlined"
-                    autoCapitalize="none"
+                    autoCapitalize="words"
                     autoCorrect={false}
-                    error={!!errors.username}
+                    error={!!errors.name}
                     left={<TextInput.Icon icon="account-outline" />}
                     style={[styles.input, { backgroundColor: theme.colors.surface }]}
                   />
-                  {errors.username ? (
-                    <HelperText type="error" visible={!!errors.username}>
-                      {errors.username.message}
+                  {errors.name ? (
+                    <HelperText type="error" visible={!!errors.name}>
+                      {errors.name.message}
                     </HelperText>
                   ) : null}
                 </View>
@@ -908,28 +746,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   cancelSubButton: {
-    marginTop: 12,
-    borderRadius: 20,
-  },
-  accordion: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 0,
-  },
-  notificationItem: {
-    paddingLeft: 8,
-  },
-  notificationDate: {
-    fontSize: 12,
-  },
-  noNotificationsContainer: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  noNotificationsText: {},
-  loadMoreButton: {
-    marginTop: 8,
-  },
-  testNotificationButton: {
     marginTop: 12,
     borderRadius: 20,
   },

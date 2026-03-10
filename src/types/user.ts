@@ -54,6 +54,7 @@ export enum AuthProvider {
 export interface User {
   _id: string;
   email: string;
+  name: string;
   username: string;
   role: UserRole;
   isActive: boolean;
@@ -86,14 +87,14 @@ export interface LoginRequest {
 
 export interface SignupRequest {
   email: string;
-  username: string;
+  name: string;
   password: string;
   subscribedTopics?: string[];
 }
 
 export interface UpdateProfileRequest {
   email?: string;
-  username?: string;
+  name?: string;
 }
 
 export interface UpdateSubscriptionsRequest {

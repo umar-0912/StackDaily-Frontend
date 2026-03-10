@@ -1,11 +1,9 @@
-import { Tabs, useSegments } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
 
 export default function TabsLayout() {
   const theme = useTheme();
-  const segments = useSegments();
-  const isOnQuestionPage = segments.includes('question');
 
   return (
     <Tabs
@@ -74,18 +72,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="question"
         options={{
-          title: 'Answer',
+          href: null,
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="lightbulb-outline"
-              color={color}
-              size={size}
-            />
-          ),
-          tabBarItemStyle: isOnQuestionPage
-            ? {}
-            : { display: 'none', width: 0 },
         }}
       />
     </Tabs>
