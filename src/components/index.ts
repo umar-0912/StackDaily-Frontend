@@ -4,3 +4,4 @@ export { EmptyState } from './EmptyState';
 export { TopicChip } from './TopicChip';
 export { StreakBadge } from './StreakBadge';
 export { QuestionCard } from './QuestionCard';
+export { AdBanner } from './AdBanner';

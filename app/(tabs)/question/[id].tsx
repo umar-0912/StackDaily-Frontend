@@ -24,6 +24,9 @@ import { QUERY_KEYS, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../../../src/u
 import { getTopicIcon } from '../../../src/utils/icons';
 import { useMarkRead } from '../../../src/hooks/useFeed';
 import { McqQuiz } from '../../../src/components/McqQuiz';
+import { AdBanner } from '../../../src/components';
+import { AD_UNIT_IDS } from '../../../src/utils/adConfig';
+import { useInterstitialAd } from '../../../src/hooks/useInterstitialAd';
 import type { DailyFeedItem } from '../../../src/types';
 
 const markdownStyles = {
@@ -75,6 +78,7 @@ export default function QuestionDetailScreen() {
   const markReadMutation = useMarkRead();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { showAd } = useInterstitialAd();
 
   // Try to parse passed data first (wrapped in try/catch for safety)
   let parsedItem: DailyFeedItem | null = null;
@@ -141,6 +145,7 @@ export default function QuestionDetailScreen() {
       { dailySelectionId: id, topicId: feedItem.topic._id },
       {
         onSuccess: () => {
+          showAd();
           setSnackbarMessage('Great job! Progress saved.');
           setSnackbarVisible(true);
         },
@@ -150,7 +155,7 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation]);
+  }, [id, feedItem, markReadMutation, showAd]);
 
   const handleMarkRead = useCallback(() => {
     if (!id || !feedItem) return;
@@ -158,6 +163,7 @@ export default function QuestionDetailScreen() {
       { dailySelectionId: id, topicId: feedItem.topic._id },
       {
         onSuccess: () => {
+          showAd();
           setSnackbarMessage('Marked as read! Streak updated.');
           setSnackbarVisible(true);
         },
@@ -167,7 +173,7 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation]);
+  }, [id, feedItem, markReadMutation, showAd]);
 
   if (!parsedItem && isLoading) {
     return (
@@ -357,6 +363,9 @@ export default function QuestionDetailScreen() {
           >
             Back to Feed
           </Button>
+
+          {/* Banner Ad */}
+          <AdBanner unitId={AD_UNIT_IDS.QUESTION_BANNER} />
         </ScrollView>
 
         <Snackbar

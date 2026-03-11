@@ -40,7 +40,13 @@
       "expo-secure-store",
       "expo-font",
       "expo-notifications",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6499914499135192~4493405315"
+        }
+      ]
     ],
     "extra": {
       "router": {},
