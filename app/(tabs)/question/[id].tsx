@@ -22,7 +22,7 @@ import { questionsApi } from '../../../src/api/questions';
 import { aiAnswersApi } from '../../../src/api/ai-answers';
 import { QUERY_KEYS, DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../../../src/utils/constants';
 import { getTopicIcon } from '../../../src/utils/icons';
-import { useMarkRead } from '../../../src/hooks/useFeed';
+import { useMarkRead, useNextQuestion } from '../../../src/hooks/useFeed';
 import { McqQuiz } from '../../../src/components/McqQuiz';
 import { AdBanner } from '../../../src/components';
 import { AD_UNIT_IDS } from '../../../src/utils/adConfig';
@@ -76,8 +76,10 @@ export default function QuestionDetailScreen() {
   }>();
   const router = useRouter();
   const markReadMutation = useMarkRead();
+  const nextQuestionMutation = useNextQuestion();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [nextUnlocked, setNextUnlocked] = useState(false);
   const { showAd } = useInterstitialAd();
 
   // Try to parse passed data first (wrapped in try/catch for safety)
@@ -145,7 +147,6 @@ export default function QuestionDetailScreen() {
       { dailySelectionId: id, topicId: feedItem.topic._id },
       {
         onSuccess: () => {
-          showAd();
           setSnackbarMessage('Great job! Progress saved.');
           setSnackbarVisible(true);
         },
@@ -155,7 +156,7 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation, showAd]);
+  }, [id, feedItem, markReadMutation]);
 
   const handleMarkRead = useCallback(() => {
     if (!id || !feedItem) return;
@@ -163,7 +164,6 @@ export default function QuestionDetailScreen() {
       { dailySelectionId: id, topicId: feedItem.topic._id },
       {
         onSuccess: () => {
-          showAd();
           setSnackbarMessage('Marked as read! Streak updated.');
           setSnackbarVisible(true);
         },
@@ -173,7 +173,27 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation, showAd]);
+  }, [id, feedItem, markReadMutation]);
+
+  const handleNextQuestion = useCallback(() => {
+    if (!feedItem || nextQuestionMutation.isPending) return;
+    // Show ad first, then unlock next question
+    showAd();
+    nextQuestionMutation.mutate(
+      { topicId: feedItem.topic._id },
+      {
+        onSuccess: () => {
+          setNextUnlocked(true);
+          setSnackbarMessage('Next question unlocked!');
+          setSnackbarVisible(true);
+        },
+        onError: () => {
+          setSnackbarMessage('Could not unlock next question. Try again.');
+          setSnackbarVisible(true);
+        },
+      },
+    );
+  }, [feedItem, nextQuestionMutation, showAd]);
 
   if (!parsedItem && isLoading) {
     return (
@@ -354,6 +374,23 @@ export default function QuestionDetailScreen() {
             </Button>
           )}
 
+          {/* Show Next Question — visible after quiz submit or if already read + can advance */}
+          {(markReadMutation.isSuccess || feedItem.progress?.canAdvance) &&
+            !nextUnlocked ? (
+            <Button
+              mode="contained"
+              onPress={handleNextQuestion}
+              loading={nextQuestionMutation.isPending}
+              disabled={nextQuestionMutation.isPending}
+              style={styles.nextQuestionButton}
+              icon="play-circle-outline"
+              buttonColor="#03DAC6"
+              textColor="#000"
+            >
+              Show Next Question
+            </Button>
+          ) : null}
+
           {/* Back Button */}
           <Button
             mode="outlined"
@@ -516,6 +553,9 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   markReadButton: {
+    marginBottom: 12,
+  },
+  nextQuestionButton: {
     marginBottom: 12,
   },
   backButton: {

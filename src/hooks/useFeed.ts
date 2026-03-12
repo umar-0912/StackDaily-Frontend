@@ -25,3 +25,16 @@ export function useMarkRead() {
     },
   });
 }
+
+export function useNextQuestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ topicId }: { topicId: string }) =>
+      dailyApi.getNextQuestion({ topicId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.progress] });
+    },
+  });
+}

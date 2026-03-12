@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import { Slot, useRouter } from 'expo-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -54,6 +55,14 @@ export default function RootLayout() {
 
   const notificationReceivedRef = useRef<Subscription | null>(null);
   const notificationResponseRef = useRef<Subscription | null>(null);
+
+  // React Query auto-refetch when app comes to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (status) => {
+      focusManager.setFocused(status === 'active');
+    });
+    return () => sub.remove();
+  }, []);
 
   // Configure Google Sign-In
   useEffect(() => {

@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFeed } from '../../src/hooks/useFeed';
 import { useAuthStore } from '../../src/stores/authStore';
-import { StreakBadge, QuestionCard, AdBanner } from '../../src/components';
+import { QuestionCard, AdBanner } from '../../src/components';
 import { AD_UNIT_IDS } from '../../src/utils/adConfig';
 import type { DailyFeedItem } from '../../src/types';
 
@@ -90,19 +90,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function FeedStreakHeader() {
-  const user = useAuthStore((state) => state.user);
-  const streakCount = user?.streak.count ?? 0;
-  const maxStreak = user?.streak.maxStreak ?? 0;
-
+function FeedAdHeader() {
   return (
     <View style={styles.feedHeaderWrapper}>
-      <View style={styles.feedHeaderRow}>
-        <Text variant="titleLarge" style={styles.feedHeaderTitle}>
-          Daily Feed
-        </Text>
-        <StreakBadge count={streakCount} maxStreak={maxStreak} size="small" />
-      </View>
       <AdBanner unitId={AD_UNIT_IDS.FEED_BANNER} />
     </View>
   );
@@ -164,7 +154,7 @@ export default function FeedScreen() {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={<FeedStreakHeader />}
+        ListHeaderComponent={<FeedAdHeader />}
         ListEmptyComponent={<EmptyState />}
         refreshControl={
           <RefreshControl
@@ -203,16 +193,6 @@ const styles = StyleSheet.create({
   },
   feedHeaderWrapper: {
     marginBottom: 16,
-  },
-  feedHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  feedHeaderTitle: {
-    fontWeight: '700',
-    color: '#1A1A2E',
   },
   separator: {
     height: 12,

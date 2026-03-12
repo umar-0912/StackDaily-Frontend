@@ -1,6 +1,61 @@
+import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
+import { useAuthStore } from '../../src/stores/authStore';
+
+/** Streak shown in the purple header bar of the Feed tab */
+function HeaderStreak() {
+  const user = useAuthStore((state) => state.user);
+  const count = user?.streak?.count ?? 0;
+  const maxStreak = user?.streak?.maxStreak ?? 0;
+
+  return (
+    <View style={headerStyles.container}>
+      <View style={headerStyles.stat}>
+        <MaterialCommunityIcons name="fire" size={20} color="#FFB74D" />
+        <Text style={headerStyles.count}>{count}</Text>
+      </View>
+      {maxStreak > 0 && (
+        <>
+          <View style={headerStyles.divider} />
+          <View style={headerStyles.stat}>
+            <MaterialCommunityIcons name="trophy" size={17} color="#FFC107" />
+            <Text style={headerStyles.count}>{maxStreak}</Text>
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+const headerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    gap: 8,
+    marginRight: 8,
+  },
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  divider: {
+    width: 1,
+    height: 16,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  count: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
 
 export default function TabsLayout() {
   const theme = useTheme();
@@ -36,6 +91,7 @@ export default function TabsLayout() {
         options={{
           title: 'Feed',
           headerTitle: 'Daily Feed',
+          headerRight: () => <HeaderStreak />,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home" color={color} size={size} />
           ),

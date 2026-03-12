@@ -28,6 +28,8 @@ export interface FeedProgress {
   questionsAnswered: number;
   totalQuestions: number;
   currentDifficulty: 'beginner' | 'intermediate' | 'advanced';
+  isRead?: boolean;
+  canAdvance?: boolean;
 }
 
 export interface DailyFeedItem {
@@ -46,3 +48,9 @@ export interface MarkReadRequest {
 export interface MarkReadResponse {
   message: string;
 }
+
+export interface NextQuestionRequest {
+  topicId: string;
+}
+
+export type NextQuestionResponse = DailyFeedItem | { message: string };

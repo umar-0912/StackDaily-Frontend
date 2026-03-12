@@ -39,24 +39,36 @@ export function QuestionCard({
                 {item.topic.name}
               </Text>
             </View>
-            <Chip
-              compact
-              textStyle={styles.difficultyText}
-              style={[
-                styles.difficultyChip,
-                { backgroundColor: `${difficultyColor}20` },
-              ]}
-            >
-              <Text
-                style={{
-                  color: difficultyColor,
-                  fontSize: 11,
-                  fontWeight: '600',
-                }}
+            <View style={styles.chipRow}>
+              {item.progress?.isRead ? (
+                <Chip
+                  compact
+                  icon="check-circle"
+                  textStyle={styles.solvedText}
+                  style={styles.solvedChip}
+                >
+                  Solved
+                </Chip>
+              ) : null}
+              <Chip
+                compact
+                textStyle={styles.difficultyText}
+                style={[
+                  styles.difficultyChip,
+                  { backgroundColor: `${difficultyColor}20` },
+                ]}
               >
-                {difficultyLabel}
-              </Text>
-            </Chip>
+                <Text
+                  style={{
+                    color: difficultyColor,
+                    fontSize: 11,
+                    fontWeight: '600',
+                  }}
+                >
+                  {difficultyLabel}
+                </Text>
+              </Chip>
+            </View>
           </View>
 
           <Text
@@ -116,11 +128,11 @@ export function QuestionCard({
           <Button
             mode="text"
             compact
-            icon="arrow-right"
+            icon={item.progress?.isRead ? 'eye-outline' : 'arrow-right'}
             onPress={onPress}
             contentStyle={styles.viewButtonContent}
           >
-            Attempt Quiz
+            {item.progress?.isRead ? 'View Answer' : 'Attempt Quiz'}
           </Button>
         </Card.Actions>
       </Card>
@@ -146,6 +158,20 @@ const styles = StyleSheet.create({
   },
   topicName: {
     fontWeight: '600',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  solvedChip: {
+    height: 30,
+    backgroundColor: '#E8F5E9',
+  },
+  solvedText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   difficultyChip: {
     height: 30,
