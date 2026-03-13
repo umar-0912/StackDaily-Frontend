@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -82,6 +82,14 @@ export default function QuestionDetailScreen() {
   const [nextUnlocked, setNextUnlocked] = useState(false);
   const [canShowNext, setCanShowNext] = useState(false);
   const { showAd } = useInterstitialAd();
+
+  // Reset stale state when navigating to a different question
+  useEffect(() => {
+    markReadMutation.reset();
+    nextQuestionMutation.reset();
+    setCanShowNext(false);
+    setNextUnlocked(false);
+  }, [id]);
 
   // Try to parse passed data first (wrapped in try/catch for safety)
   let parsedItem: DailyFeedItem | null = null;

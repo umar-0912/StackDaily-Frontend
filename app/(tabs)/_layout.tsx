@@ -126,7 +126,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="question"
+        name="question/[id]"
         options={{
           href: null,
           headerShown: false,
