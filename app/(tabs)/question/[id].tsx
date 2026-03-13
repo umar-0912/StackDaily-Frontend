@@ -54,7 +54,7 @@ function AnswerSection({ answer }: { answer: { content: string; generatedAt: str
     <Surface style={styles.answerSection} elevation={1}>
       <View style={styles.answerHeader}>
         <View style={styles.answerHeaderLeft}>
-          <MaterialCommunityIcons name="lightbulb-outline" size={22} color="#03DAC6" />
+          <MaterialCommunityIcons name="lightbulb-outline" size={22} color="#6200EE" />
           <Text variant="titleMedium" style={styles.answerTitle}>
             Answer
           </Text>
@@ -80,6 +80,7 @@ export default function QuestionDetailScreen() {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [nextUnlocked, setNextUnlocked] = useState(false);
+  const [canShowNext, setCanShowNext] = useState(false);
   const { showAd } = useInterstitialAd();
 
   // Try to parse passed data first (wrapped in try/catch for safety)
@@ -143,10 +144,12 @@ export default function QuestionDetailScreen() {
 
   const handleQuizSubmit = useCallback(() => {
     if (!id || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) return;
+    showAd();
     markReadMutation.mutate(
       { dailySelectionId: id, topicId: feedItem.topic._id },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          setCanShowNext(data.canAdvance);
           setSnackbarMessage('Great job! Progress saved.');
           setSnackbarVisible(true);
         },
@@ -156,7 +159,7 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation]);
+  }, [id, feedItem, markReadMutation, showAd]);
 
   const handleMarkRead = useCallback(() => {
     if (!id || !feedItem) return;
@@ -182,9 +185,15 @@ export default function QuestionDetailScreen() {
     nextQuestionMutation.mutate(
       { topicId: feedItem.topic._id },
       {
-        onSuccess: () => {
-          setNextUnlocked(true);
-          setSnackbarMessage('Next question unlocked!');
+        onSuccess: (response) => {
+          // Backend returns DailyFeedItem on success, or { message } on rejection
+          const data = (response as any)?.data ?? response;
+          if (data && 'question' in data) {
+            setNextUnlocked(true);
+            setSnackbarMessage('Next question unlocked!');
+          } else {
+            setSnackbarMessage(data?.message ?? 'Already advanced today.');
+          }
           setSnackbarVisible(true);
         },
         onError: () => {
@@ -321,7 +330,7 @@ export default function QuestionDetailScreen() {
               <MaterialCommunityIcons
                 name="help-circle-outline"
                 size={22}
-                color="#03DAC6"
+                color="#6200EE"
               />
               <Text variant="labelLarge" style={styles.questionLabel}>
                 Question
@@ -359,7 +368,7 @@ export default function QuestionDetailScreen() {
 
           {/* MCQ Quiz or fallback "I've Read This" button */}
           {hasMcqs ? (
-            <McqQuiz mcqs={feedItem.answer.mcqs!} onSubmit={handleQuizSubmit} />
+            <McqQuiz key={id} mcqs={feedItem.answer.mcqs!} onSubmit={handleQuizSubmit} />
           ) : (
             <Button
               mode="contained"
@@ -374,8 +383,8 @@ export default function QuestionDetailScreen() {
             </Button>
           )}
 
-          {/* Show Next Question — visible after quiz submit or if already read + can advance */}
-          {(markReadMutation.isSuccess || feedItem.progress?.canAdvance) &&
+          {/* Show Next Question — visible only if backend says canAdvance */}
+          {(canShowNext || feedItem.progress?.canAdvance) &&
             !nextUnlocked ? (
             <Button
               mode="contained"
@@ -495,7 +504,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   questionLabel: {
-    color: '#03DAC6',
+    color: '#6200EE',
     fontWeight: '600',
   },
   questionText: {

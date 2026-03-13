@@ -47,6 +47,7 @@ export interface MarkReadRequest {
 
 export interface MarkReadResponse {
   message: string;
+  canAdvance: boolean;
 }
 
 export interface NextQuestionRequest {

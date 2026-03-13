@@ -16,8 +16,10 @@ export function useMarkRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ dailySelectionId, topicId }: { dailySelectionId: string; topicId: string }) =>
-      dailyApi.markRead({ dailySelectionId, topicId }),
+    mutationFn: async ({ dailySelectionId, topicId }: { dailySelectionId: string; topicId: string }) => {
+      const { data } = await dailyApi.markRead({ dailySelectionId, topicId });
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });

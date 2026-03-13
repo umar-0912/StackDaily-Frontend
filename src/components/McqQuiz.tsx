@@ -29,6 +29,11 @@ export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
     onSubmit();
   }, [allAnswered, submitted, onSubmit]);
 
+  const handleRetry = useCallback(() => {
+    setSelectedAnswers({});
+    setSubmitted(false);
+  }, []);
+
   const correctCount = submitted
     ? mcqs.filter((mcq, i) => selectedAnswers[i] === mcq.correctIndex).length
     : 0;
@@ -120,16 +125,27 @@ export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
           Submit Quiz
         </Button>
       ) : (
-        <Surface style={styles.scoreCard} elevation={0}>
-          <MaterialCommunityIcons
-            name={correctCount === mcqs.length ? 'trophy' : 'check-decagram'}
-            size={28}
-            color={correctCount === mcqs.length ? '#FF9800' : '#4CAF50'}
-          />
-          <Text variant="titleMedium" style={styles.scoreText}>
-            You got {correctCount} out of {mcqs.length} correct
-          </Text>
-        </Surface>
+        <>
+          <Surface style={styles.scoreCard} elevation={0}>
+            <MaterialCommunityIcons
+              name={correctCount === mcqs.length ? 'trophy' : 'check-decagram'}
+              size={28}
+              color={correctCount === mcqs.length ? '#FF9800' : '#4CAF50'}
+            />
+            <Text variant="titleMedium" style={styles.scoreText}>
+              You got {correctCount} out of {mcqs.length} correct
+            </Text>
+          </Surface>
+          <Button
+            mode="outlined"
+            onPress={handleRetry}
+            style={styles.retryButton}
+            icon="refresh"
+            textColor="#666"
+          >
+            Re-attempt
+          </Button>
+        </>
       )}
     </Surface>
   );
@@ -223,5 +239,9 @@ const styles = StyleSheet.create({
   scoreText: {
     fontWeight: '600',
     color: '#333',
+  },
+  retryButton: {
+    marginTop: 10,
+    borderColor: '#CCC',
   },
 });
