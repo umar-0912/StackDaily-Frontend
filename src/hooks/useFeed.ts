@@ -32,8 +32,10 @@ export function useNextQuestion() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ topicId }: { topicId: string }) =>
-      dailyApi.getNextQuestion({ topicId }),
+    mutationFn: async ({ topicId }: { topicId: string }) => {
+      const { data } = await dailyApi.getNextQuestion({ topicId });
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.progress] });

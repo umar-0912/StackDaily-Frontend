@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -81,6 +81,9 @@ export default function QuestionDetailScreen() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [nextUnlocked, setNextUnlocked] = useState(false);
   const [canShowNext, setCanShowNext] = useState(false);
+  const [overrideFeedItem, setOverrideFeedItem] = useState<DailyFeedItem | null>(null);
+  const [questionVersion, setQuestionVersion] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
   const { showAd } = useInterstitialAd();
 
   // Reset stale state when navigating to a different question
@@ -89,6 +92,8 @@ export default function QuestionDetailScreen() {
     nextQuestionMutation.reset();
     setCanShowNext(false);
     setNextUnlocked(false);
+    setOverrideFeedItem(null);
+    setQuestionVersion(0);
   }, [id]);
 
   // Try to parse passed data first (wrapped in try/catch for safety)
@@ -148,13 +153,16 @@ export default function QuestionDetailScreen() {
     enabled: !!id && !parsedItem,
   });
 
-  const feedItem = parsedItem ?? fetchedItem;
+  const feedItem = overrideFeedItem ?? parsedItem ?? fetchedItem;
+
+  // Use the correct dailySelectionId (override may have a different one)
+  const activeDailySelectionId = overrideFeedItem?.dailySelectionId ?? id;
 
   const handleQuizSubmit = useCallback(() => {
-    if (!id || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) return;
+    if (!activeDailySelectionId || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) return;
     showAd();
     markReadMutation.mutate(
-      { dailySelectionId: id, topicId: feedItem.topic._id },
+      { dailySelectionId: activeDailySelectionId, topicId: feedItem.topic._id },
       {
         onSuccess: (data) => {
           setCanShowNext(data.canAdvance);
@@ -167,12 +175,12 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation, showAd]);
+  }, [activeDailySelectionId, feedItem, markReadMutation, showAd]);
 
   const handleMarkRead = useCallback(() => {
-    if (!id || !feedItem) return;
+    if (!activeDailySelectionId || !feedItem) return;
     markReadMutation.mutate(
-      { dailySelectionId: id, topicId: feedItem.topic._id },
+      { dailySelectionId: activeDailySelectionId, topicId: feedItem.topic._id },
       {
         onSuccess: () => {
           setSnackbarMessage('Marked as read! Streak updated.');
@@ -184,23 +192,27 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [id, feedItem, markReadMutation]);
+  }, [activeDailySelectionId, feedItem, markReadMutation]);
 
   const handleNextQuestion = useCallback(() => {
     if (!feedItem || nextQuestionMutation.isPending) return;
-    // Show ad first, then unlock next question
     showAd();
     nextQuestionMutation.mutate(
       { topicId: feedItem.topic._id },
       {
-        onSuccess: (response) => {
-          // Backend returns DailyFeedItem on success, or { message } on rejection
-          const data = (response as any)?.data ?? response;
+        onSuccess: (data) => {
           if (data && 'question' in data) {
-            setNextUnlocked(true);
+            // Display the new question in-place
+            setOverrideFeedItem(data as DailyFeedItem);
+            setCanShowNext(false);
+            setNextUnlocked(false);
+            markReadMutation.reset();
+            nextQuestionMutation.reset();
+            setQuestionVersion((v) => v + 1);
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
             setSnackbarMessage('Next question unlocked!');
           } else {
-            setSnackbarMessage(data?.message ?? 'Already advanced today.');
+            setSnackbarMessage((data as any)?.message ?? 'Already advanced today.');
           }
           setSnackbarVisible(true);
         },
@@ -210,7 +222,7 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [feedItem, nextQuestionMutation, showAd]);
+  }, [feedItem, nextQuestionMutation, showAd, markReadMutation]);
 
   if (!parsedItem && isLoading) {
     return (
@@ -296,6 +308,7 @@ export default function QuestionDetailScreen() {
       />
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -376,7 +389,7 @@ export default function QuestionDetailScreen() {
 
           {/* MCQ Quiz or fallback "I've Read This" button */}
           {hasMcqs ? (
-            <McqQuiz key={id} mcqs={feedItem.answer.mcqs!} onSubmit={handleQuizSubmit} />
+            <McqQuiz key={`${id}-${questionVersion}`} mcqs={feedItem.answer.mcqs!} onSubmit={handleQuizSubmit} />
           ) : (
             <Button
               mode="contained"
