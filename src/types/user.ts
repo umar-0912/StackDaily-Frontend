@@ -14,9 +14,16 @@ export enum SubscriptionStatus {
   EXPIRED = 'expired',
 }
 
+export enum SubscriptionTier {
+  MONTHLY = 'monthly',
+  HALF_YEARLY = 'half_yearly',
+  YEARLY = 'yearly',
+}
+
 export interface Subscription {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
+  tier: SubscriptionTier | null;
   startDate: string | null;
   endDate: string | null;
   cancelledAt: string | null;
@@ -25,6 +32,9 @@ export interface Subscription {
 export interface SubscriptionInfo {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
+  tier: SubscriptionTier | null;
+  tierName: string | null;
+  pricePerMonth: number | null;
   maxTopics: number | null;
   currentTopicCount: number;
   isOverLimit: boolean;
@@ -105,6 +115,10 @@ export interface UpdateFcmTokenRequest {
   fcmToken: string;
 }
 
+export interface SubscribeRequest {
+  tier: SubscriptionTier;
+}
+
 export interface SubscribeResponse {
   shortUrl: string;
   subscriptionId: string;
@@ -113,6 +127,16 @@ export interface SubscribeResponse {
 
 export interface CancelSubscriptionResponse {
   message: string;
+}
+
+export interface UnsubscribeTopicRequest {
+  topicId: string;
+  clearProgress?: boolean;
+}
+
+export interface UnsubscribeTopicResponse {
+  removedFromHistory: boolean;
+  progressCleared: boolean;
 }
 
 export interface VerifyEmailRequest {

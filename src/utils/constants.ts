@@ -31,6 +31,45 @@ export const SUBSCRIPTION_LIMITS = {
   FREE_MAX_TOPICS: 3,
 } as const;
 
+export const SUBSCRIPTION_TIERS = {
+  yearly: {
+    key: 'yearly' as const,
+    name: 'Yearly',
+    pricePerMonth: 15,
+    totalMonths: 12,
+    totalPrice: 180,
+    billingLabel: '₹15/month × 12 months',
+    savingsLabel: 'Save 50%',
+    badge: 'Best Value',
+    badgeColor: '#4CAF50',
+  },
+  half_yearly: {
+    key: 'half_yearly' as const,
+    name: 'Half-Yearly',
+    pricePerMonth: 20,
+    totalMonths: 6,
+    totalPrice: 120,
+    billingLabel: '₹20/month × 6 months',
+    savingsLabel: 'Save 33%',
+    badge: 'Popular',
+    badgeColor: '#FF9800',
+  },
+  monthly: {
+    key: 'monthly' as const,
+    name: 'Monthly',
+    pricePerMonth: 30,
+    totalMonths: 1,
+    totalPrice: 30,
+    billingLabel: '₹30 for 1 month',
+    savingsLabel: null,
+    badge: null,
+    badgeColor: null,
+  },
+} as const;
+
+/** Ordered list for display (best value first) */
+export const SUBSCRIPTION_TIER_ORDER = ['yearly', 'half_yearly', 'monthly'] as const;
+
 export const DIFFICULTY_COLORS = {
   beginner: '#4CAF50',
   intermediate: '#FF9800',

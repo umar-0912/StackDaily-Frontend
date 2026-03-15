@@ -13,14 +13,18 @@ import {
   Button,
   Searchbar,
   ProgressBar,
+  Portal,
+  Dialog,
+  Paragraph,
   useTheme,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTopics } from '../../src/hooks/useTopics';
-import { useUpdateSubscriptions } from '../../src/hooks/useProfile';
+import { useUpdateSubscriptions, useUnsubscribeTopic } from '../../src/hooks/useProfile';
 import { useProgress } from '../../src/hooks/useProgress';
 import { useAuthStore } from '../../src/stores/authStore';
+import { useIsProUser } from '../../src/hooks/useIsProUser';
 import { LoadingScreen, ErrorScreen, EmptyState } from '../../src/components';
 import { getTopicIcon } from '../../src/utils/icons';
 import { DIFFICULTY_LABELS, DIFFICULTY_COLORS } from '../../src/utils/constants';
@@ -30,19 +34,36 @@ const ALL_CATEGORY = 'All';
 
 const ItemSeparator = () => <View style={styles.separator} />;
 
+interface UnsubscribeDialogState {
+  visible: boolean;
+  topicId: string;
+  topicName: string;
+  percentComplete: number;
+}
+
+const INITIAL_DIALOG_STATE: UnsubscribeDialogState = {
+  visible: false,
+  topicId: '',
+  topicName: '',
+  percentComplete: 0,
+};
+
 export default function TopicsScreen() {
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [togglingTopicId, setTogglingTopicId] = useState<string | null>(null);
+  const [unsubscribeDialog, setUnsubscribeDialog] = useState<UnsubscribeDialogState>(INITIAL_DIALOG_STATE);
 
   const { data: topicsData, isLoading, isError, refetch, isRefetching } = useTopics({
     limit: 100,
     isActive: 'true',
   });
   const updateSubscriptionsMutation = useUpdateSubscriptions();
+  const unsubscribeTopicMutation = useUnsubscribeTopic();
   const { data: progressData } = useProgress();
   const user = useAuthStore((state) => state.user);
+  const isProUser = useIsProUser();
 
   const subscribedIds = useMemo(() => {
     return new Set(user?.subscribedTopics.map((t) => t._id) ?? []);
@@ -84,25 +105,67 @@ export default function TopicsScreen() {
     return result;
   }, [topicsData?.data, selectedCategory, searchQuery]);
 
-  const handleToggleSubscription = useCallback(
+  const handleSubscribe = useCallback(
     async (topicId: string) => {
       setTogglingTopicId(topicId);
       try {
         const currentIds = user?.subscribedTopics.map((t) => t._id) ?? [];
-        let newIds: string[];
-
-        if (currentIds.includes(topicId)) {
-          newIds = currentIds.filter((id) => id !== topicId);
-        } else {
-          newIds = [...currentIds, topicId];
-        }
-
+        const newIds = [...currentIds, topicId];
         await updateSubscriptionsMutation.mutateAsync({ topicIds: newIds });
       } finally {
         setTogglingTopicId(null);
       }
     },
     [user?.subscribedTopics, updateSubscriptionsMutation],
+  );
+
+  const handleUnsubscribe = useCallback(
+    async (topicId: string, topicName: string) => {
+      const progress = progressByTopicId.get(topicId);
+      const percentComplete = progress?.percentComplete ?? 0;
+
+      // PRO users: no topic limit concern — unsubscribe directly
+      // FREE users with < 10% progress: unsubscribe directly (slot freed)
+      if (isProUser || percentComplete < 10) {
+        setTogglingTopicId(topicId);
+        try {
+          await unsubscribeTopicMutation.mutateAsync({ topicId });
+        } finally {
+          setTogglingTopicId(null);
+        }
+        return;
+      }
+
+      // FREE users with >= 10% progress: show confirmation dialog
+      setUnsubscribeDialog({ visible: true, topicId, topicName, percentComplete });
+    },
+    [progressByTopicId, isProUser, unsubscribeTopicMutation],
+  );
+
+  const handleUnsubscribeConfirm = useCallback(
+    async (clearProgress: boolean) => {
+      const { topicId } = unsubscribeDialog;
+      setUnsubscribeDialog(INITIAL_DIALOG_STATE);
+      setTogglingTopicId(topicId);
+      try {
+        await unsubscribeTopicMutation.mutateAsync({ topicId, clearProgress });
+      } finally {
+        setTogglingTopicId(null);
+      }
+    },
+    [unsubscribeDialog, unsubscribeTopicMutation],
+  );
+
+  const handleToggleSubscription = useCallback(
+    (topicId: string, topicName: string) => {
+      const isSubscribed = subscribedIds.has(topicId);
+      if (isSubscribed) {
+        handleUnsubscribe(topicId, topicName);
+      } else {
+        handleSubscribe(topicId);
+      }
+    },
+    [subscribedIds, handleSubscribe, handleUnsubscribe],
   );
 
   const renderCategoryChip = useCallback(
@@ -230,7 +293,7 @@ export default function TopicsScreen() {
           <Card.Actions style={styles.topicActions}>
             <Button
               mode={isSubscribed ? 'contained' : 'outlined'}
-              onPress={() => handleToggleSubscription(item._id)}
+              onPress={() => handleToggleSubscription(item._id, item.name)}
               loading={isToggling}
               disabled={isToggling}
               icon={isSubscribed ? 'check' : 'plus'}
@@ -321,6 +384,44 @@ export default function TopicsScreen() {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={ItemSeparator}
       />
+      <Portal>
+        <Dialog
+          visible={unsubscribeDialog.visible}
+          onDismiss={() => setUnsubscribeDialog(INITIAL_DIALOG_STATE)}
+          style={styles.dialog}
+        >
+          <Dialog.Icon icon="alert-circle-outline" color={theme.colors.error} />
+          <Dialog.Title style={styles.dialogTitle}>Unsubscribe from Topic?</Dialog.Title>
+          <Dialog.Content>
+            <Paragraph style={styles.dialogText}>
+              You've completed {unsubscribeDialog.percentComplete}% of{' '}
+              <Text style={{ fontWeight: '700' }}>{unsubscribeDialog.topicName}</Text>.
+              {'\n\n'}
+              This topic will permanently count toward your free plan limit (3 topics).
+            </Paragraph>
+          </Dialog.Content>
+          <Dialog.Actions style={styles.dialogActions}>
+            <Button
+              onPress={() => setUnsubscribeDialog(INITIAL_DIALOG_STATE)}
+              textColor={theme.colors.onSurfaceVariant}
+            >
+              Cancel
+            </Button>
+            <Button
+              onPress={() => handleUnsubscribeConfirm(true)}
+              textColor={theme.colors.error}
+            >
+              Clear Progress
+            </Button>
+            <Button
+              mode="contained"
+              onPress={() => handleUnsubscribeConfirm(false)}
+            >
+              Keep Progress
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   );
 }
@@ -417,5 +518,19 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 12,
+  },
+  dialog: {
+    borderRadius: 16,
+  },
+  dialogTitle: {
+    textAlign: 'center',
+  },
+  dialogText: {
+    lineHeight: 22,
+  },
+  dialogActions: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 4,
   },
 });

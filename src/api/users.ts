@@ -5,6 +5,8 @@ import type {
   UpdateSubscriptionsRequest,
   UpdateFcmTokenRequest,
   SubscriptionInfo,
+  UnsubscribeTopicRequest,
+  UnsubscribeTopicResponse,
 } from '../types';
 
 export const usersApi = {
@@ -21,4 +23,7 @@ export const usersApi = {
 
   getSubscriptionInfo: () =>
     apiClient.get<SubscriptionInfo>('/users/subscription'),
+
+  unsubscribeTopic: (data: UnsubscribeTopicRequest) =>
+    apiClient.post<UnsubscribeTopicResponse>('/users/subscriptions/unsubscribe', data),
 };

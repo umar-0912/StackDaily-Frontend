@@ -32,9 +32,9 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile, useUpdateProfile, useSubscriptionInfo } from '../../src/hooks/useProfile';
 import { useSubscribe, useCancelSubscription } from '../../src/hooks/usePayments';
 import { useProgress } from '../../src/hooks/useProgress';
-import { QUERY_KEYS } from '../../src/utils/constants';
+import { QUERY_KEYS, SUBSCRIPTION_TIERS, SUBSCRIPTION_TIER_ORDER } from '../../src/utils/constants';
 import { LoadingScreen, ErrorScreen, StreakBadge, TopicChip } from '../../src/components';
-import { SubscriptionPlan, SubscriptionStatus } from '../../src/types';
+import { SubscriptionPlan, SubscriptionStatus, SubscriptionTier } from '../../src/types';
 
 const editProfileSchema = z.object({
   name: z
@@ -341,10 +341,21 @@ export default function ProfileScreen() {
                 style={{ color: theme.colors.onSurfaceVariant }}
               >
                 Unlimited topics
-                {subscriptionInfo.daysRemaining !== null
-                  ? ` \u00B7 ${subscriptionInfo.daysRemaining} days remaining`
+                {subscriptionInfo.tierName
+                  ? ` · ${subscriptionInfo.tierName}`
+                  : ''}
+                {subscriptionInfo.pricePerMonth
+                  ? ` · ₹${subscriptionInfo.pricePerMonth}/mo`
                   : ''}
               </Text>
+              {subscriptionInfo.daysRemaining !== null && (
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}
+                >
+                  {subscriptionInfo.daysRemaining} days remaining
+                </Text>
+              )}
               {subscriptionInfo.status === SubscriptionStatus.CANCELLED && (
                 <Text
                   variant="bodySmall"
@@ -375,29 +386,77 @@ export default function ProfileScreen() {
             <View style={styles.planDetails}>
               <Text
                 variant="bodyMedium"
-                style={{ color: theme.colors.onSurfaceVariant }}
+                style={{ color: theme.colors.onSurfaceVariant, marginBottom: 4 }}
               >
                 Up to {subscriptionInfo?.maxTopics ?? 3} topics
               </Text>
               <Text
                 variant="bodySmall"
-                style={{
-                  color: theme.colors.onSurfaceVariant,
-                  marginTop: 4,
-                }}
+                style={{ color: theme.colors.onSurfaceVariant, marginBottom: 12 }}
               >
-                Upgrade to Pro for unlimited topics at just Rs.30/month
+                Upgrade to Pro for unlimited topics
               </Text>
-              <Button
-                mode="contained"
-                onPress={() => subscribeMutation.mutate()}
-                style={styles.upgradeButton}
-                icon="crown"
-                loading={subscribeMutation.isPending}
-                disabled={subscribeMutation.isPending}
-              >
-                Upgrade to Pro
-              </Button>
+
+              {/* Tier Plan Cards */}
+              {SUBSCRIPTION_TIER_ORDER.map((tierKey) => {
+                const tier = SUBSCRIPTION_TIERS[tierKey];
+                const isSelected = subscribeMutation.variables === tierKey;
+                const isLoading = subscribeMutation.isPending && isSelected;
+
+                return (
+                  <Surface
+                    key={tierKey}
+                    style={[
+                      styles.tierCard,
+                      tier.badge === 'Best Value' && {
+                        borderColor: tier.badgeColor!,
+                        borderWidth: 2,
+                      },
+                    ]}
+                    elevation={1}
+                  >
+                    <View style={styles.tierCardHeader}>
+                      <View style={styles.tierNameRow}>
+                        <Text variant="titleSmall" style={{ fontWeight: '700' }}>
+                          {tier.name}
+                        </Text>
+                        {tier.badge && (
+                          <View
+                            style={[
+                              styles.tierBadge,
+                              { backgroundColor: tier.badgeColor! },
+                            ]}
+                          >
+                            <Text style={styles.tierBadgeText}>{tier.badge}</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text variant="headlineSmall" style={styles.tierPrice}>
+                        ₹{tier.pricePerMonth}
+                        <Text variant="bodySmall" style={{ fontWeight: '400' }}>/mo</Text>
+                      </Text>
+                    </View>
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}
+                    >
+                      {tier.billingLabel}
+                      {tier.savingsLabel ? ` · ${tier.savingsLabel}` : ''}
+                    </Text>
+                    <Button
+                      mode={tier.badge === 'Best Value' ? 'contained' : 'outlined'}
+                      onPress={() => subscribeMutation.mutate(tierKey as SubscriptionTier)}
+                      compact
+                      icon="crown"
+                      loading={isLoading}
+                      disabled={subscribeMutation.isPending}
+                      style={styles.tierButton}
+                    >
+                      Choose Plan
+                    </Button>
+                  </Surface>
+                );
+              })}
             </View>
           )}
         </Surface>
@@ -741,8 +800,37 @@ const styles = StyleSheet.create({
   planDetails: {
     alignItems: 'center',
   },
-  upgradeButton: {
-    marginTop: 12,
+  tierCard: {
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    width: '100%',
+  },
+  tierCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tierNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tierBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  tierBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  tierPrice: {
+    fontWeight: '700',
+  },
+  tierButton: {
     borderRadius: 20,
   },
   cancelSubButton: {

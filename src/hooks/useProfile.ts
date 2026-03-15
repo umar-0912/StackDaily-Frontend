@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../api/users';
 import { QUERY_KEYS } from '../utils/constants';
 import { useAuthStore } from '../stores/authStore';
-import type { UpdateProfileRequest, UpdateSubscriptionsRequest, SubscriptionInfo } from '../types';
+import type { UpdateProfileRequest, UpdateSubscriptionsRequest, SubscriptionInfo, UnsubscribeTopicRequest, UnsubscribeTopicResponse } from '../types';
 
 export function useProfile() {
   return useQuery({
@@ -54,6 +54,24 @@ export function useUpdateSubscriptions() {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.topics] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });
+    },
+  });
+}
+
+export function useUnsubscribeTopic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UnsubscribeTopicRequest) => {
+      const { data: result } = await usersApi.unsubscribeTopic(data);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.topics] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.progress] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.subscription] });
     },
   });
 }

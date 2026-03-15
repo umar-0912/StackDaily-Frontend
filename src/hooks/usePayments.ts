@@ -2,27 +2,29 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import { paymentsApi } from '../api/payments';
-import { QUERY_KEYS } from '../utils/constants';
+import { QUERY_KEYS, SUBSCRIPTION_TIERS } from '../utils/constants';
+import type { SubscriptionTier } from '../types';
 
 /**
  * Hook to create a Razorpay subscription.
- * On success, opens the Razorpay native checkout sheet in-app.
+ * Accepts a tier parameter, opens Razorpay native checkout on success.
  */
 export function useSubscribe() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const { data } = await paymentsApi.subscribe();
-      return data;
+    mutationFn: async (tier: SubscriptionTier) => {
+      const { data } = await paymentsApi.subscribe({ tier });
+      return { ...data, tier };
     },
     onSuccess: async (data) => {
+      const tierConfig = SUBSCRIPTION_TIERS[data.tier];
       try {
         await RazorpayCheckout.open({
           key: data.razorpayKeyId,
           subscription_id: data.subscriptionId,
           name: 'StackDaily',
-          description: 'Pro Subscription - Unlimited Topics',
+          description: `Pro · ${tierConfig.name} Plan`,
           theme: { color: '#6200EE' },
         });
 
