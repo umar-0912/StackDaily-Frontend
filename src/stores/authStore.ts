@@ -147,6 +147,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isSubmitting: true, error: null });
     try {
       await GoogleSignin.hasPlayServices();
+      // Sign out first to force account picker (otherwise SDK auto-selects last account)
+      await GoogleSignin.signOut();
       const response = await GoogleSignin.signIn();
 
       if (!isSuccessResponse(response)) {
