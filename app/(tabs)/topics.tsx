@@ -2,20 +2,18 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
-  FlatList,
-  RefreshControl,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {
   Text,
-  Card,
-  Chip,
   Button,
   Searchbar,
-  ProgressBar,
   Portal,
   Dialog,
   Paragraph,
+  List,
+  Divider,
   useTheme,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,13 +24,13 @@ import { useProgress } from '../../src/hooks/useProgress';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useIsProUser } from '../../src/hooks/useIsProUser';
 import { LoadingScreen, ErrorScreen, EmptyState } from '../../src/components';
-import { getTopicIcon } from '../../src/utils/icons';
-import { DIFFICULTY_LABELS, DIFFICULTY_COLORS } from '../../src/utils/constants';
+import {
+  CATEGORY_DISPLAY_ORDER,
+  CATEGORY_ICONS,
+  getShortTopicName,
+  compareCategoryOrder,
+} from '../../src/utils/categoryConfig';
 import type { Topic, TopicProgress } from '../../src/types';
-
-const ALL_CATEGORY = 'All';
-
-const ItemSeparator = () => <View style={styles.separator} />;
 
 interface UnsubscribeDialogState {
   visible: boolean;
@@ -48,10 +46,16 @@ const INITIAL_DIALOG_STATE: UnsubscribeDialogState = {
   percentComplete: 0,
 };
 
+interface CategoryGroup {
+  category: string;
+  topics: Topic[];
+  subscribedCount: number;
+}
+
 export default function TopicsScreen() {
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [togglingTopicId, setTogglingTopicId] = useState<string | null>(null);
   const [unsubscribeDialog, setUnsubscribeDialog] = useState<UnsubscribeDialogState>(INITIAL_DIALOG_STATE);
 
@@ -64,6 +68,8 @@ export default function TopicsScreen() {
   const { data: progressData } = useProgress();
   const user = useAuthStore((state) => state.user);
   const isProUser = useIsProUser();
+
+  // ── Derived data ─────────────────────────────────────────────────────────
 
   const subscribedIds = useMemo(() => {
     return new Set(user?.subscribedTopics.map((t) => t._id) ?? []);
@@ -79,31 +85,59 @@ export default function TopicsScreen() {
     return map;
   }, [progressData]);
 
-  const categories = useMemo(() => {
-    if (!topicsData?.data) return [ALL_CATEGORY];
-    const uniqueCategories = [
-      ...new Set(topicsData.data.map((t) => t.category)),
-    ].sort();
-    return [ALL_CATEGORY, ...uniqueCategories];
-  }, [topicsData?.data]);
-
-  const filteredTopics = useMemo(() => {
+  const groupedTopics = useMemo((): CategoryGroup[] => {
     if (!topicsData?.data) return [];
-    let result = topicsData.data;
 
-    if (selectedCategory !== ALL_CATEGORY) {
-      result = result.filter((t) => t.category === selectedCategory);
-    }
+    let topics = topicsData.data;
 
+    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
-      result = result.filter((t) =>
-        t.name.toLowerCase().includes(query),
-      );
+      topics = topics.filter((t) => t.name.toLowerCase().includes(query));
     }
 
-    return result;
-  }, [topicsData?.data, selectedCategory, searchQuery]);
+    // Group by category
+    const groups = new Map<string, Topic[]>();
+    for (const topic of topics) {
+      const existing = groups.get(topic.category) || [];
+      existing.push(topic);
+      groups.set(topic.category, existing);
+    }
+
+    // Sort categories by display order
+    const sortedCategories = [...groups.keys()].sort(compareCategoryOrder);
+
+    return sortedCategories.map((category) => {
+      const categoryTopics = groups.get(category)!;
+      return {
+        category,
+        topics: categoryTopics,
+        subscribedCount: categoryTopics.filter((t) => subscribedIds.has(t._id)).length,
+      };
+    });
+  }, [topicsData?.data, searchQuery, subscribedIds]);
+
+  // Auto-expand all categories when searching
+  const effectiveExpanded = useMemo(() => {
+    if (searchQuery.trim()) {
+      return new Set(groupedTopics.map((g) => g.category));
+    }
+    return expandedCategories;
+  }, [searchQuery, groupedTopics, expandedCategories]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  }, []);
 
   const handleSubscribe = useCallback(
     async (topicId: string) => {
@@ -124,8 +158,7 @@ export default function TopicsScreen() {
       const progress = progressByTopicId.get(topicId);
       const percentComplete = progress?.percentComplete ?? 0;
 
-      // PRO users: no topic limit concern — unsubscribe directly
-      // FREE users with < 10% progress: unsubscribe directly (slot freed)
+      // PRO users or < 10% progress: unsubscribe directly
       if (isProUser || percentComplete < 10) {
         setTogglingTopicId(topicId);
         try {
@@ -168,160 +201,7 @@ export default function TopicsScreen() {
     [subscribedIds, handleSubscribe, handleUnsubscribe],
   );
 
-  const renderCategoryChip = useCallback(
-    (category: string) => {
-      const isSelected = category === selectedCategory;
-      return (
-        <Chip
-          key={category}
-          mode={isSelected ? 'flat' : 'outlined'}
-          selected={isSelected}
-          onPress={() => setSelectedCategory(category)}
-          style={[
-            styles.categoryChip,
-            isSelected && { backgroundColor: theme.colors.primaryContainer },
-          ]}
-          selectedColor={theme.colors.primary}
-        >
-          {category}
-        </Chip>
-      );
-    },
-    [selectedCategory, theme.colors.primary, theme.colors.primaryContainer],
-  );
-
-  const renderTopicCard = useCallback(
-    ({ item }: { item: Topic }) => {
-      const isSubscribed = subscribedIds.has(item._id);
-      const iconName = getTopicIcon(item.icon);
-      const isToggling = togglingTopicId === item._id;
-      const progress = progressByTopicId.get(item._id);
-
-      return (
-        <Card style={[styles.topicCard, { backgroundColor: theme.colors.surface }]} mode="elevated">
-          <Card.Content>
-            <View style={styles.topicHeader}>
-              <View style={styles.topicIconRow}>
-                <MaterialCommunityIcons
-                  name={iconName}
-                  size={28}
-                  color={theme.colors.primary}
-                />
-                <View style={styles.topicInfo}>
-                  <Text variant="titleMedium" style={styles.topicName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Chip
-                    compact
-                    style={[styles.categoryBadge, { backgroundColor: theme.colors.primaryContainer }]}
-                    textStyle={[styles.categoryBadgeText, { color: theme.colors.primary }]}
-                  >
-                    {item.category}
-                  </Chip>
-                </View>
-              </View>
-            </View>
-
-            <Text
-              variant="bodyMedium"
-              style={[styles.topicDescription, { color: theme.colors.onSurfaceVariant }]}
-              numberOfLines={2}
-            >
-              {item.description}
-            </Text>
-
-            {isSubscribed && progress ? (
-              <View style={styles.topicProgressSection}>
-                <View style={styles.topicProgressLabelRow}>
-                  <Chip
-                    compact
-                    style={[
-                      styles.statusChip,
-                      {
-                        backgroundColor:
-                          progress.status === 'completed'
-                            ? '#4CAF5020'
-                            : progress.status === 'in_progress'
-                              ? '#2196F320'
-                              : '#9E9E9E20',
-                      },
-                    ]}
-                    textStyle={{
-                      fontSize: 10,
-                      color:
-                        progress.status === 'completed'
-                          ? '#4CAF50'
-                          : progress.status === 'in_progress'
-                            ? '#2196F3'
-                            : '#9E9E9E',
-                    }}
-                  >
-                    {progress.status === 'completed'
-                      ? 'Completed'
-                      : progress.status === 'in_progress'
-                        ? 'In Progress'
-                        : 'Not Started'}
-                  </Chip>
-                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    {progress.questionsAnswered}/{progress.totalQuestions}
-                  </Text>
-                </View>
-                <ProgressBar
-                  progress={progress.percentComplete / 100}
-                  color={
-                    progress.status === 'completed'
-                      ? '#4CAF50'
-                      : theme.colors.primary
-                  }
-                  style={styles.topicProgressBar}
-                />
-                {progress.currentDifficulty ? (
-                  <Text
-                    variant="labelSmall"
-                    style={{
-                      color: DIFFICULTY_COLORS[progress.currentDifficulty as keyof typeof DIFFICULTY_COLORS] ?? theme.colors.onSurfaceVariant,
-                      marginTop: 4,
-                    }}
-                  >
-                    Level: {DIFFICULTY_LABELS[progress.currentDifficulty as keyof typeof DIFFICULTY_LABELS] ?? progress.currentDifficulty}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-          </Card.Content>
-
-          <Card.Actions style={styles.topicActions}>
-            <Button
-              mode={isSubscribed ? 'contained' : 'outlined'}
-              onPress={() => handleToggleSubscription(item._id, item.name)}
-              loading={isToggling}
-              disabled={isToggling}
-              icon={isSubscribed ? 'check' : 'plus'}
-              compact
-              style={isSubscribed ? styles.subscribedButton : styles.subscribeButton}
-              textColor={isSubscribed ? theme.colors.onPrimary : theme.colors.primary}
-              buttonColor={isSubscribed ? theme.colors.primary : undefined}
-            >
-              {isSubscribed ? 'Subscribed' : 'Subscribe'}
-            </Button>
-          </Card.Actions>
-        </Card>
-      );
-    },
-    [
-      subscribedIds,
-      progressByTopicId,
-      theme.colors.primary,
-      theme.colors.onPrimary,
-      theme.colors.surface,
-      theme.colors.primaryContainer,
-      theme.colors.onSurfaceVariant,
-      handleToggleSubscription,
-      togglingTopicId,
-    ],
-  );
-
-  const keyExtractor = useCallback((item: Topic) => item._id, []);
+  // ── Render ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return <LoadingScreen message="Loading topics..." />;
@@ -337,16 +217,8 @@ export default function TopicsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.surfaceVariant }]} edges={['bottom']}>
-      <View style={[styles.filtersContainer, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.outlineVariant }]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {categories.map(renderCategoryChip)}
-        </ScrollView>
-
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['bottom']}>
+      <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.outlineVariant }]}>
         <Searchbar
           placeholder="Search topics..."
           onChangeText={setSearchQuery}
@@ -357,12 +229,19 @@ export default function TopicsScreen() {
         />
       </View>
 
-      <FlatList
-        data={filteredTopics}
-        renderItem={renderTopicCard}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
+        {groupedTopics.length === 0 ? (
           <EmptyState
             icon="book-search-outline"
             title="No topics found"
@@ -372,18 +251,91 @@ export default function TopicsScreen() {
                 : 'No topics available at the moment'
             }
           />
-        }
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={ItemSeparator}
-      />
+        ) : (
+          <List.Section>
+            {groupedTopics.map((group) => {
+              const isExpanded = effectiveExpanded.has(group.category);
+              const iconName = CATEGORY_ICONS[group.category] || 'folder-outline';
+              const description =
+                group.subscribedCount > 0
+                  ? `${group.subscribedCount} of ${group.topics.length} subscribed`
+                  : `${group.topics.length} topic${group.topics.length !== 1 ? 's' : ''}`;
+
+              return (
+                <View key={group.category}>
+                  <List.Accordion
+                    title={group.category}
+                    description={description}
+                    left={(props) => (
+                      <List.Icon
+                        {...props}
+                        icon={iconName}
+                        color={theme.colors.primary}
+                      />
+                    )}
+                    expanded={isExpanded}
+                    onPress={() => toggleCategory(group.category)}
+                    style={[styles.accordion, { backgroundColor: theme.colors.surface }]}
+                    titleStyle={styles.accordionTitle}
+                    descriptionStyle={[styles.accordionDescription, { color: theme.colors.onSurfaceVariant }]}
+                  >
+                    {group.topics.map((topic, index) => {
+                      const isSubscribed = subscribedIds.has(topic._id);
+                      const isToggling = togglingTopicId === topic._id;
+                      const shortName = getShortTopicName(topic.name);
+                      const isEmoji = topic.icon && /^[^\x00-\x7F]/.test(topic.icon);
+
+                      return (
+                        <View key={topic._id}>
+                          <View style={[styles.topicRow, { backgroundColor: theme.colors.background }]}>
+                            <View style={styles.topicRowLeft}>
+                              {isEmoji ? (
+                                <Text style={styles.topicEmoji}>{topic.icon}</Text>
+                              ) : (
+                                <MaterialCommunityIcons
+                                  name="book-open-variant"
+                                  size={22}
+                                  color={theme.colors.onSurfaceVariant}
+                                />
+                              )}
+                              <Text
+                                variant="bodyLarge"
+                                style={[styles.topicRowName, { color: theme.colors.onSurface }]}
+                                numberOfLines={1}
+                              >
+                                {shortName}
+                              </Text>
+                            </View>
+                            <Button
+                              mode={isSubscribed ? 'contained' : 'outlined'}
+                              onPress={() => handleToggleSubscription(topic._id, topic.name)}
+                              loading={isToggling}
+                              disabled={isToggling}
+                              icon={isSubscribed ? 'check' : 'plus'}
+                              compact
+                              style={styles.topicRowButton}
+                              labelStyle={styles.topicRowButtonLabel}
+                              textColor={isSubscribed ? theme.colors.onPrimary : theme.colors.primary}
+                              buttonColor={isSubscribed ? theme.colors.primary : undefined}
+                            >
+                              {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                            </Button>
+                          </View>
+                          {index < group.topics.length - 1 && (
+                            <Divider style={{ marginLeft: 56 }} />
+                          )}
+                        </View>
+                      );
+                    })}
+                  </List.Accordion>
+                  <Divider />
+                </View>
+              );
+            })}
+          </List.Section>
+        )}
+      </ScrollView>
+
       <Portal>
         <Dialog
           visible={unsubscribeDialog.visible}
@@ -430,21 +382,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  filtersContainer: {
-    paddingBottom: 12,
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  categoriesContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  categoryChip: {
-    marginRight: 0,
-  },
   searchBar: {
-    marginHorizontal: 16,
     borderRadius: 12,
     height: 44,
   },
@@ -452,72 +395,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minHeight: 44,
   },
-  listContent: {
-    padding: 16,
+  scrollContent: {
     paddingBottom: 32,
     flexGrow: 1,
   },
-  topicCard: {
-    borderRadius: 12,
+  accordion: {
+    paddingVertical: 2,
   },
-  topicHeader: {
+  accordionTitle: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  accordionDescription: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  topicRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingLeft: 32,
   },
-  topicIconRow: {
+  topicRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    marginRight: 12,
   },
-  topicInfo: {
+  topicEmoji: {
+    fontSize: 22,
+    width: 28,
+    textAlign: 'center',
+  },
+  topicRowName: {
+    fontWeight: '500',
     flex: 1,
-    gap: 4,
   },
-  topicName: {
-    fontWeight: '600',
-  },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-  },
-  categoryBadgeText: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  topicDescription: {
-    lineHeight: 20,
-  },
-  topicProgressSection: {
-    marginTop: 12,
-  },
-  topicProgressLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statusChip: {
-    height: 26,
-  },
-  topicProgressBar: {
-    height: 4,
-    borderRadius: 2,
-  },
-  topicActions: {
-    justifyContent: 'flex-end',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-  },
-  subscribedButton: {
+  topicRowButton: {
     borderRadius: 20,
   },
-  subscribeButton: {
-    borderRadius: 20,
-  },
-  separator: {
-    height: 12,
+  topicRowButtonLabel: {
+    fontSize: 12,
   },
   dialog: {
     borderRadius: 16,
