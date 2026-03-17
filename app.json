@@ -46,7 +46,15 @@
         {
           "androidAppId": "ca-app-pub-6499914499135192~4493405315"
         }
-      ]
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.stackdaily.app",
+          "enableGooglePay": true
+        }
+      ],
+      "expo-localization"
     ],
     "extra": {
       "router": {},

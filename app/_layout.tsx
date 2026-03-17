@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { Subscription } from 'expo-notifications';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { useAuthStore } from '../src/stores/authStore';
 import {
   registerForPushNotifications,
@@ -14,7 +15,7 @@ import {
   addNotificationReceivedListener,
   addNotificationResponseListener,
 } from '../src/utils/notifications';
-import { GOOGLE_WEB_CLIENT_ID } from '../src/utils/constants';
+import { GOOGLE_WEB_CLIENT_ID, STRIPE_PUBLISHABLE_KEY } from '../src/utils/constants';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,12 +142,17 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <PaperProvider theme={theme}>
-        <SafeAreaProvider>
-          <StatusBar style="dark" />
-          <Slot />
-        </SafeAreaProvider>
-      </PaperProvider>
+      <StripeProvider
+        publishableKey={STRIPE_PUBLISHABLE_KEY}
+        merchantIdentifier="merchant.com.stackdaily.app"
+      >
+        <PaperProvider theme={theme}>
+          <SafeAreaProvider>
+            <StatusBar style="dark" />
+            <Slot />
+          </SafeAreaProvider>
+        </PaperProvider>
+      </StripeProvider>
     </QueryClientProvider>
   );
 }

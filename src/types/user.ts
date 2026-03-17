@@ -35,6 +35,8 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null;
   tierName: string | null;
   pricePerMonth: number | null;
+  currency: 'INR' | 'USD' | null;
+  paymentProvider: 'razorpay' | 'stripe' | null;
   maxTopics: number | null;
   currentTopicCount: number;
   isOverLimit: boolean;
@@ -117,13 +119,25 @@ export interface UpdateFcmTokenRequest {
 
 export interface SubscribeRequest {
   tier: SubscriptionTier;
+  provider?: 'razorpay' | 'stripe';
 }
 
-export interface SubscribeResponse {
+export interface RazorpaySubscribeResponse {
+  provider: 'razorpay';
   shortUrl: string;
   subscriptionId: string;
   razorpayKeyId: string;
 }
+
+export interface StripeSubscribeResponse {
+  provider: 'stripe';
+  clientSecret: string;
+  ephemeralKey: string;
+  stripeCustomerId: string;
+  publishableKey: string;
+}
+
+export type SubscribeResponse = RazorpaySubscribeResponse | StripeSubscribeResponse;
 
 export interface CancelSubscriptionResponse {
   message: string;

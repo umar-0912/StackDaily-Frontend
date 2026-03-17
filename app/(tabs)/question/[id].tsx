@@ -160,7 +160,8 @@ export default function QuestionDetailScreen() {
 
   const handleQuizSubmit = useCallback(() => {
     if (!activeDailySelectionId || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) return;
-    showAd();
+    // No ad here — results show instantly for satisfying UX.
+    // Interstitial fires only on "Show Next Question" (natural transition gate).
     markReadMutation.mutate(
       { dailySelectionId: activeDailySelectionId, topicId: feedItem.topic._id },
       {
@@ -175,7 +176,7 @@ export default function QuestionDetailScreen() {
         },
       },
     );
-  }, [activeDailySelectionId, feedItem, markReadMutation, showAd]);
+  }, [activeDailySelectionId, feedItem, markReadMutation]);
 
   const handleMarkRead = useCallback(() => {
     if (!activeDailySelectionId || !feedItem) return;
@@ -196,13 +197,15 @@ export default function QuestionDetailScreen() {
 
   const handleNextQuestion = useCallback(() => {
     if (!feedItem || nextQuestionMutation.isPending) return;
+    // Ad is always loaded here (never consumed during quiz submit).
+    // Shows interstitial as a natural gate before the next question loads.
+    // Graceful no-op if ad failed to preload.
     showAd();
     nextQuestionMutation.mutate(
       { topicId: feedItem.topic._id },
       {
         onSuccess: (data) => {
           if (data && 'question' in data) {
-            // Display the new question in-place
             setOverrideFeedItem(data as DailyFeedItem);
             setCanShowNext(false);
             setNextUnlocked(false);

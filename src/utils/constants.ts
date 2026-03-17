@@ -67,6 +67,45 @@ export const SUBSCRIPTION_TIERS = {
   },
 } as const;
 
+/** Stripe (USD) tier configs for international users */
+export const STRIPE_SUBSCRIPTION_TIERS = {
+  yearly: {
+    key: 'yearly' as const,
+    name: 'Yearly',
+    pricePerMonth: 0.50,
+    totalMonths: 12,
+    totalPrice: 6.00,
+    billingLabel: '$0.50/month \u00D7 12 months',
+    savingsLabel: 'Save 50%',
+    badge: 'Best Value',
+    badgeColor: '#4CAF50',
+  },
+  half_yearly: {
+    key: 'half_yearly' as const,
+    name: 'Half-Yearly',
+    pricePerMonth: 0.75,
+    totalMonths: 6,
+    totalPrice: 4.50,
+    billingLabel: '$0.75/month \u00D7 6 months',
+    savingsLabel: 'Save 25%',
+    badge: 'Popular',
+    badgeColor: '#FF9800',
+  },
+  monthly: {
+    key: 'monthly' as const,
+    name: 'Monthly',
+    pricePerMonth: 1.00,
+    totalMonths: 1,
+    totalPrice: 1.00,
+    billingLabel: '$1.00 for 1 month',
+    savingsLabel: null,
+    badge: null,
+    badgeColor: null,
+  },
+} as const;
+
+export const STRIPE_PUBLISHABLE_KEY = 'pk_test_51L8dRMSCdcr3BzakZFiumzvhsg6pwgpZHgc58uTixlkxEslOtBJ2xh6jp87WEczI39tm4r6wD7Qg89Xy18U8BP1U00w9AhFCPy';
+
 /** Ordered list for display (best value first) */
 export const SUBSCRIPTION_TIER_ORDER = ['yearly', 'half_yearly', 'monthly'] as const;
 

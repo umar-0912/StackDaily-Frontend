@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text, Surface, Button, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -12,6 +12,9 @@ interface McqQuizProps {
 export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  // Ref-based guard: prevents double-tap firing onSubmit twice before
+  // React batches the setSubmitted(true) state update.
+  const submitLockRef = useRef(false);
 
   const allAnswered = Object.keys(selectedAnswers).length === mcqs.length;
 
@@ -24,14 +27,18 @@ export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
   );
 
   const handleSubmit = useCallback(() => {
-    if (!allAnswered || submitted) return;
-    setSubmitted(true);
+    if (!allAnswered || submitted || submitLockRef.current) return;
+    submitLockRef.current = true;
+    // Call parent FIRST to fire the mark-read mutation immediately,
+    // before React renders the quiz results.
     onSubmit();
+    setSubmitted(true);
   }, [allAnswered, submitted, onSubmit]);
 
   const handleRetry = useCallback(() => {
     setSelectedAnswers({});
     setSubmitted(false);
+    submitLockRef.current = false;
   }, []);
 
   const correctCount = submitted

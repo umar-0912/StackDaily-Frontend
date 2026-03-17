@@ -25,10 +25,12 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useIsProUser } from '../../src/hooks/useIsProUser';
 import { LoadingScreen, ErrorScreen, EmptyState } from '../../src/components';
 import {
-  CATEGORY_DISPLAY_ORDER,
   CATEGORY_ICONS,
+  MERGED_TECH_DISPLAY_NAME,
   getShortTopicName,
+  getDisplayCategory,
   compareCategoryOrder,
+  groupTechTopicsBySubcategory,
 } from '../../src/utils/categoryConfig';
 import type { Topic, TopicProgress } from '../../src/types';
 
@@ -96,12 +98,13 @@ export default function TopicsScreen() {
       topics = topics.filter((t) => t.name.toLowerCase().includes(query));
     }
 
-    // Group by category
+    // Group by display category (tech categories merge into one folder)
     const groups = new Map<string, Topic[]>();
     for (const topic of topics) {
-      const existing = groups.get(topic.category) || [];
+      const displayCat = getDisplayCategory(topic.category);
+      const existing = groups.get(displayCat) || [];
       existing.push(topic);
-      groups.set(topic.category, existing);
+      groups.set(displayCat, existing);
     }
 
     // Sort categories by display order
@@ -201,6 +204,58 @@ export default function TopicsScreen() {
     [subscribedIds, handleSubscribe, handleUnsubscribe],
   );
 
+  // ── Render helpers ──────────────────────────────────────────────────────
+
+  const renderTopicRow = useCallback(
+    (topic: Topic, isLast: boolean) => {
+      const isSubscribed = subscribedIds.has(topic._id);
+      const isToggling = togglingTopicId === topic._id;
+      const shortName = getShortTopicName(topic.name);
+      const isEmoji = topic.icon && /^[^\x00-\x7F]/.test(topic.icon);
+
+      return (
+        <View key={topic._id}>
+          <View style={[styles.topicRow, { backgroundColor: theme.colors.background }]}>
+            <View style={styles.topicRowLeft}>
+              {isEmoji ? (
+                <Text style={styles.topicEmoji}>{topic.icon}</Text>
+              ) : (
+                <MaterialCommunityIcons
+                  name="book-open-variant"
+                  size={22}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              )}
+              <Text
+                variant="bodyLarge"
+                style={[styles.topicRowName, { color: theme.colors.onSurface }]}
+                numberOfLines={1}
+              >
+                {shortName}
+              </Text>
+            </View>
+            <Button
+              mode={isSubscribed ? 'contained' : 'outlined'}
+              onPress={() => handleToggleSubscription(topic._id, topic.name)}
+              loading={isToggling}
+              disabled={isToggling}
+              icon={isSubscribed ? 'check' : 'plus'}
+              compact
+              style={styles.topicRowButton}
+              labelStyle={styles.topicRowButtonLabel}
+              textColor={isSubscribed ? theme.colors.onPrimary : theme.colors.primary}
+              buttonColor={isSubscribed ? theme.colors.primary : undefined}
+            >
+              {isSubscribed ? 'Subscribed' : 'Subscribe'}
+            </Button>
+          </View>
+          {!isLast && <Divider style={{ marginLeft: 56 }} />}
+        </View>
+      );
+    },
+    [subscribedIds, togglingTopicId, theme, handleToggleSubscription],
+  );
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -279,54 +334,22 @@ export default function TopicsScreen() {
                     titleStyle={styles.accordionTitle}
                     descriptionStyle={[styles.accordionDescription, { color: theme.colors.onSurfaceVariant }]}
                   >
-                    {group.topics.map((topic, index) => {
-                      const isSubscribed = subscribedIds.has(topic._id);
-                      const isToggling = togglingTopicId === topic._id;
-                      const shortName = getShortTopicName(topic.name);
-                      const isEmoji = topic.icon && /^[^\x00-\x7F]/.test(topic.icon);
-
-                      return (
-                        <View key={topic._id}>
-                          <View style={[styles.topicRow, { backgroundColor: theme.colors.background }]}>
-                            <View style={styles.topicRowLeft}>
-                              {isEmoji ? (
-                                <Text style={styles.topicEmoji}>{topic.icon}</Text>
-                              ) : (
-                                <MaterialCommunityIcons
-                                  name="book-open-variant"
-                                  size={22}
-                                  color={theme.colors.onSurfaceVariant}
-                                />
+                    {group.category === MERGED_TECH_DISPLAY_NAME
+                      ? groupTechTopicsBySubcategory(group.topics).map(
+                          (subGroup) => (
+                            <View key={subGroup.subHeader}>
+                              <List.Subheader style={[styles.techSubHeader, { color: theme.colors.onSurfaceVariant }]}>
+                                {subGroup.subHeader.toUpperCase()}
+                              </List.Subheader>
+                              {subGroup.topics.map((topic, idx) =>
+                                renderTopicRow(topic, idx === subGroup.topics.length - 1),
                               )}
-                              <Text
-                                variant="bodyLarge"
-                                style={[styles.topicRowName, { color: theme.colors.onSurface }]}
-                                numberOfLines={1}
-                              >
-                                {shortName}
-                              </Text>
                             </View>
-                            <Button
-                              mode={isSubscribed ? 'contained' : 'outlined'}
-                              onPress={() => handleToggleSubscription(topic._id, topic.name)}
-                              loading={isToggling}
-                              disabled={isToggling}
-                              icon={isSubscribed ? 'check' : 'plus'}
-                              compact
-                              style={styles.topicRowButton}
-                              labelStyle={styles.topicRowButtonLabel}
-                              textColor={isSubscribed ? theme.colors.onPrimary : theme.colors.primary}
-                              buttonColor={isSubscribed ? theme.colors.primary : undefined}
-                            >
-                              {isSubscribed ? 'Subscribed' : 'Subscribe'}
-                            </Button>
-                          </View>
-                          {index < group.topics.length - 1 && (
-                            <Divider style={{ marginLeft: 56 }} />
-                          )}
-                        </View>
-                      );
-                    })}
+                          ),
+                        )
+                      : group.topics.map((topic, index) =>
+                          renderTopicRow(topic, index === group.topics.length - 1),
+                        )}
                   </List.Accordion>
                   <Divider />
                 </View>
@@ -433,6 +456,14 @@ const styles = StyleSheet.create({
   topicRowName: {
     fontWeight: '500',
     flex: 1,
+  },
+  techSubHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    paddingLeft: 36,
+    paddingTop: 12,
+    paddingBottom: 2,
   },
   topicRowButton: {
     borderRadius: 20,

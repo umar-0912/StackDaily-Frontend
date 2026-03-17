@@ -3,12 +3,15 @@
  * Single source of truth for folder display order, icons, and name helpers.
  */
 
+import type { Topic } from '../types';
+
+// ── Tech category merging ────────────────────────────────────────────────
+
 /**
- * Ordered list of all categories for accordion display.
- * Categories not in this list appear last, sorted alphabetically.
+ * DB categories that are grouped into one "Computer Science" folder on the
+ * Topics page. The DB categories remain separate (needed for AI prompts).
  */
-export const CATEGORY_DISPLAY_ORDER: string[] = [
-  // Tech topics (top)
+export const TECH_CATEGORIES = new Set([
   'Programming Languages',
   'Frontend',
   'Backend',
@@ -17,6 +20,29 @@ export const CATEGORY_DISPLAY_ORDER: string[] = [
   'Cloud',
   'DevOps',
   'Databases',
+]);
+
+/** Display name shown on the merged tech accordion folder. */
+export const MERGED_TECH_DISPLAY_NAME = 'Computer Science';
+
+/**
+ * Maps a DB category to its display category on the Topics page.
+ * All tech categories collapse into a single "Computer Science" folder;
+ * everything else keeps its DB name.
+ */
+export function getDisplayCategory(dbCategory: string): string {
+  return TECH_CATEGORIES.has(dbCategory) ? MERGED_TECH_DISPLAY_NAME : dbCategory;
+}
+
+// ── Display order ────────────────────────────────────────────────────────
+
+/**
+ * Ordered list of DISPLAY categories for accordion sorting.
+ * Categories not in this list appear last, sorted alphabetically.
+ */
+export const CATEGORY_DISPLAY_ORDER: string[] = [
+  // Tech (merged under one folder)
+  MERGED_TECH_DISPLAY_NAME,
   // Government exams
   'Government Exams',
   // Competitive exams
@@ -34,18 +60,13 @@ export const CATEGORY_DISPLAY_ORDER: string[] = [
   'Class 12',
 ];
 
+// ── Icons ────────────────────────────────────────────────────────────────
+
 /**
- * MaterialCommunityIcons name for each category's accordion header.
+ * MaterialCommunityIcons name for each DISPLAY category's accordion header.
  */
 export const CATEGORY_ICONS: Record<string, string> = {
-  'Programming Languages': 'code-tags',
-  Frontend: 'monitor',
-  Backend: 'server',
-  Architecture: 'sitemap-outline',
-  'Computer Science': 'file-tree',
-  Cloud: 'cloud-outline',
-  DevOps: 'docker',
-  Databases: 'database',
+  [MERGED_TECH_DISPLAY_NAME]: 'laptop',
   'Government Exams': 'book-education-outline',
   'JEE - Class 11': 'target',
   'JEE - Class 12': 'target',
@@ -94,4 +115,57 @@ export function compareCategoryOrder(a: string, b: string): number {
   const effectiveB = indexB === -1 ? CATEGORY_DISPLAY_ORDER.length : indexB;
   if (effectiveA !== effectiveB) return effectiveA - effectiveB;
   return a.localeCompare(b);
+}
+
+// ── Tech sub-category grouping ───────────────────────────────────────────
+
+/**
+ * Maps each tech DB category to its display sub-header name and sort order
+ * inside the merged "Computer Science" accordion.
+ * Categories sharing the same displayName are merged into one sub-group.
+ */
+export const TECH_SUBCATEGORY_CONFIG: Record<
+  string,
+  { displayName: string; order: number }
+> = {
+  'Programming Languages': { displayName: 'Programming Languages', order: 0 },
+  Frontend: { displayName: 'Frontend', order: 1 },
+  Backend: { displayName: 'Backend', order: 2 },
+  Architecture: { displayName: 'Architecture', order: 3 },
+  'Computer Science': { displayName: 'Data Structures & Algorithms', order: 4 },
+  Cloud: { displayName: 'Cloud & DevOps', order: 5 },
+  DevOps: { displayName: 'Cloud & DevOps', order: 5 },
+  Databases: { displayName: 'Databases', order: 6 },
+};
+
+export interface TechSubGroup {
+  subHeader: string;
+  order: number;
+  topics: Topic[];
+}
+
+/**
+ * Groups tech topics by their DB category into display sub-groups for the
+ * merged "Computer Science" accordion. Categories sharing the same
+ * displayName (e.g., Cloud + DevOps) are merged into one sub-group.
+ */
+export function groupTechTopicsBySubcategory(topics: Topic[]): TechSubGroup[] {
+  const groups = new Map<string, { order: number; topics: Topic[] }>();
+
+  for (const topic of topics) {
+    const config = TECH_SUBCATEGORY_CONFIG[topic.category];
+    const displayName = config?.displayName ?? 'Other';
+    const order = config?.order ?? 99;
+
+    const existing = groups.get(displayName);
+    if (existing) {
+      existing.topics.push(topic);
+    } else {
+      groups.set(displayName, { order, topics: [topic] });
+    }
+  }
+
+  return [...groups.entries()]
+    .map(([subHeader, { order, topics: t }]) => ({ subHeader, order, topics: t }))
+    .sort((a, b) => a.order - b.order || a.subHeader.localeCompare(b.subHeader));
 }
