@@ -7,15 +7,21 @@ import { useIsProUser } from './useIsProUser';
 import { AD_UNIT_IDS, INTERSTITIAL_TIMEOUT_MS } from '../utils/adConfig';
 
 interface UseInterstitialAdReturn {
-  /** Call to show the interstitial. No-op if ad isn't loaded or user is Pro. */
-  showAd: () => void;
+  /**
+   * Show the interstitial ad. If the ad is loaded, it opens immediately and
+   * invokes `onClosed` when the user dismisses it. If the ad isn't loaded
+   * (or the user is Pro), `onClosed` fires synchronously so the caller's
+   * flow is never blocked.
+   */
+  showAd: (onClosed?: () => void) => void;
   /** Whether the ad has finished loading and is ready to display. */
   isAdReady: boolean;
 }
 
 /**
  * Hook that manages the full lifecycle of an interstitial ad:
- * preload on mount → show on demand → 10 s safety timeout → auto-reload.
+ * preload on mount → show on demand → execute callback on close →
+ * 10 s safety timeout → auto-reload.
  */
 export function useInterstitialAd(): UseInterstitialAdReturn {
   const isProUser = useIsProUser();
@@ -23,12 +29,21 @@ export function useInterstitialAd(): UseInterstitialAdReturn {
   const adRef = useRef<InterstitialAd | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsubscribersRef = useRef<Array<() => void>>([]);
+  /** Pending callback to invoke when the ad closes. */
+  const onClosedRef = useRef<(() => void) | null>(null);
 
   const clearAdTimeout = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+  }, []);
+
+  /** Flush the pending onClosed callback (if any) exactly once. */
+  const flushOnClosed = useCallback(() => {
+    const cb = onClosedRef.current;
+    onClosedRef.current = null;
+    cb?.();
   }, []);
 
   /** Create a fresh ad instance and start loading. */
@@ -54,6 +69,7 @@ export function useInterstitialAd(): UseInterstitialAdReturn {
       () => {
         clearAdTimeout();
         setIsAdReady(false);
+        flushOnClosed();
         loadAd(); // Preload the next ad
       },
     );
@@ -65,7 +81,7 @@ export function useInterstitialAd(): UseInterstitialAdReturn {
 
     unsubscribersRef.current = [unsubLoaded, unsubClosed, unsubError];
     interstitial.load();
-  }, [isProUser, clearAdTimeout]);
+  }, [isProUser, clearAdTimeout, flushOnClosed]);
 
   // Preload on mount
   useEffect(() => {
@@ -74,23 +90,38 @@ export function useInterstitialAd(): UseInterstitialAdReturn {
       clearAdTimeout();
       unsubscribersRef.current.forEach((unsub) => unsub());
       unsubscribersRef.current = [];
+      onClosedRef.current = null;
     };
   }, [loadAd, clearAdTimeout]);
 
-  /** Show the ad with a 10 s safety timeout that resets hook state. */
-  const showAd = useCallback(() => {
-    if (isProUser || !adRef.current || !isAdReady) return;
+  /**
+   * Show the ad. `onClosed` fires after the user dismisses the ad.
+   * If the ad isn't ready (Pro user, load failure, etc.), `onClosed`
+   * fires immediately so the caller's flow proceeds without blocking.
+   */
+  const showAd = useCallback(
+    (onClosed?: () => void) => {
+      if (isProUser || !adRef.current || !isAdReady) {
+        // No ad to show — invoke callback immediately
+        onClosed?.();
+        return;
+      }
 
-    adRef.current.show();
+      // Store callback for the CLOSED event
+      onClosedRef.current = onClosed ?? null;
+      adRef.current.show();
 
-    // Safety net: reset state after 10 s so the hook is ready for next use.
-    // The actual ad remains on screen until the user taps ✕ (Google policy).
-    timeoutRef.current = setTimeout(() => {
-      clearAdTimeout();
-      setIsAdReady(false);
-      loadAd();
-    }, INTERSTITIAL_TIMEOUT_MS);
-  }, [isProUser, isAdReady, clearAdTimeout, loadAd]);
+      // Safety net: reset state after 10 s so the hook is ready for next use.
+      // The actual ad remains on screen until the user taps ✕ (Google policy).
+      timeoutRef.current = setTimeout(() => {
+        clearAdTimeout();
+        setIsAdReady(false);
+        flushOnClosed();
+        loadAd();
+      }, INTERSTITIAL_TIMEOUT_MS);
+    },
+    [isProUser, isAdReady, clearAdTimeout, flushOnClosed, loadAd],
+  );
 
   return { showAd, isAdReady };
 }

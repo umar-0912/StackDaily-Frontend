@@ -158,25 +158,37 @@ export default function QuestionDetailScreen() {
   // Use the correct dailySelectionId (override may have a different one)
   const activeDailySelectionId = overrideFeedItem?.dailySelectionId ?? id;
 
-  const handleQuizSubmit = useCallback(() => {
-    if (!activeDailySelectionId || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) return;
-    // No ad here — results show instantly for satisfying UX.
-    // Interstitial fires only on "Show Next Question" (natural transition gate).
-    markReadMutation.mutate(
-      { dailySelectionId: activeDailySelectionId, topicId: feedItem.topic._id },
-      {
-        onSuccess: (data) => {
-          setCanShowNext(data.canAdvance);
-          setSnackbarMessage('Great job! Progress saved.');
-          setSnackbarVisible(true);
-        },
-        onError: () => {
-          setSnackbarMessage('Failed to save progress. Please try again.');
-          setSnackbarVisible(true);
-        },
-      },
-    );
-  }, [activeDailySelectionId, feedItem, markReadMutation]);
+  /**
+   * Quiz submit flow: show interstitial ad → after ad closes → fire
+   * mark-read mutation + reveal quiz results (McqQuiz awaits this promise).
+   */
+  const handleQuizSubmit = useCallback((): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      if (!activeDailySelectionId || !feedItem || markReadMutation.isPending || markReadMutation.isSuccess) {
+        resolve();
+        return;
+      }
+      // Ad opens immediately. When user dismisses it, the callback fires:
+      // mutation dispatches and the promise resolves so McqQuiz reveals results.
+      showAd(() => {
+        markReadMutation.mutate(
+          { dailySelectionId: activeDailySelectionId, topicId: feedItem.topic._id },
+          {
+            onSuccess: (data) => {
+              setCanShowNext(data.canAdvance);
+              setSnackbarMessage('Great job! Progress saved.');
+              setSnackbarVisible(true);
+            },
+            onError: () => {
+              setSnackbarMessage('Failed to save progress. Please try again.');
+              setSnackbarVisible(true);
+            },
+          },
+        );
+        resolve(); // Results show immediately after ad — mutation runs in background
+      });
+    });
+  }, [activeDailySelectionId, feedItem, markReadMutation, showAd]);
 
   const handleMarkRead = useCallback(() => {
     if (!activeDailySelectionId || !feedItem) return;
@@ -195,36 +207,42 @@ export default function QuestionDetailScreen() {
     );
   }, [activeDailySelectionId, feedItem, markReadMutation]);
 
+  /**
+   * Next question flow: show interstitial ad → after ad closes → fire
+   * next-question mutation → swap question in-place.
+   */
   const handleNextQuestion = useCallback(() => {
     if (!feedItem || nextQuestionMutation.isPending) return;
-    // Ad is always loaded here (never consumed during quiz submit).
-    // Shows interstitial as a natural gate before the next question loads.
-    // Graceful no-op if ad failed to preload.
-    showAd();
-    nextQuestionMutation.mutate(
-      { topicId: feedItem.topic._id },
-      {
-        onSuccess: (data) => {
-          if (data && 'question' in data) {
-            setOverrideFeedItem(data as DailyFeedItem);
-            setCanShowNext(false);
-            setNextUnlocked(false);
-            markReadMutation.reset();
-            nextQuestionMutation.reset();
-            setQuestionVersion((v) => v + 1);
-            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-            setSnackbarMessage('Next question unlocked!');
-          } else {
-            setSnackbarMessage((data as any)?.message ?? 'Already advanced today.');
-          }
-          setSnackbarVisible(true);
+    // Ad opens immediately. When user dismisses it, the callback fires
+    // and the mutation fetches + swaps the next question in-place.
+    // If ad isn't loaded (reload still in progress), callback fires
+    // immediately so the user isn't blocked.
+    showAd(() => {
+      nextQuestionMutation.mutate(
+        { topicId: feedItem.topic._id },
+        {
+          onSuccess: (data) => {
+            if (data && 'question' in data) {
+              setOverrideFeedItem(data as DailyFeedItem);
+              setCanShowNext(false);
+              setNextUnlocked(false);
+              markReadMutation.reset();
+              nextQuestionMutation.reset();
+              setQuestionVersion((v) => v + 1);
+              scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+              setSnackbarMessage('Next question unlocked!');
+            } else {
+              setSnackbarMessage((data as any)?.message ?? 'Already advanced today.');
+            }
+            setSnackbarVisible(true);
+          },
+          onError: () => {
+            setSnackbarMessage('Could not unlock next question. Try again.');
+            setSnackbarVisible(true);
+          },
         },
-        onError: () => {
-          setSnackbarMessage('Could not unlock next question. Try again.');
-          setSnackbarVisible(true);
-        },
-      },
-    );
+      );
+    });
   }, [feedItem, nextQuestionMutation, showAd, markReadMutation]);
 
   if (!parsedItem && isLoading) {

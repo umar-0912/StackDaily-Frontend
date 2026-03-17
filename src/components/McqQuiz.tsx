@@ -6,12 +6,17 @@ import type { FeedMcq } from '../types';
 
 interface McqQuizProps {
   mcqs: FeedMcq[];
-  onSubmit: () => void;
+  /** Called when the user submits. Returns a promise that resolves after the
+   *  interstitial ad closes (or immediately if no ad). Quiz results are
+   *  revealed only after this promise resolves. */
+  onSubmit: () => Promise<void>;
 }
 
 export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  /** True while the interstitial ad is on screen (between submit tap and results reveal). */
+  const [isWaitingForAd, setIsWaitingForAd] = useState(false);
   // Ref-based guard: prevents double-tap firing onSubmit twice before
   // React batches the setSubmitted(true) state update.
   const submitLockRef = useRef(false);
@@ -26,12 +31,14 @@ export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
     [submitted],
   );
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!allAnswered || submitted || submitLockRef.current) return;
     submitLockRef.current = true;
-    // Call parent FIRST to fire the mark-read mutation immediately,
-    // before React renders the quiz results.
-    onSubmit();
+    setIsWaitingForAd(true);
+    // Parent shows the interstitial ad and resolves once it closes.
+    // Results are revealed only after the ad dismisses.
+    await onSubmit();
+    setIsWaitingForAd(false);
     setSubmitted(true);
   }, [allAnswered, submitted, onSubmit]);
 
@@ -124,12 +131,13 @@ export function McqQuiz({ mcqs, onSubmit }: McqQuizProps) {
         <Button
           mode="contained"
           onPress={handleSubmit}
-          disabled={!allAnswered}
+          disabled={!allAnswered || isWaitingForAd}
+          loading={isWaitingForAd}
           style={styles.submitButton}
           buttonColor="#6200EE"
-          icon="send"
+          icon={isWaitingForAd ? undefined : 'send'}
         >
-          Submit Quiz
+          {isWaitingForAd ? 'Showing Ad…' : 'Submit Quiz'}
         </Button>
       ) : (
         <>
