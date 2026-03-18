@@ -60,13 +60,17 @@ export function useUpdateSubscriptions() {
 
 export function useUnsubscribeTopic() {
   const queryClient = useQueryClient();
+  const setUser = useAuthStore((state) => state.setUser);
 
   return useMutation({
     mutationFn: async (data: UnsubscribeTopicRequest) => {
       const { data: result } = await usersApi.unsubscribeTopic(data);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Refetch profile to sync auth store (unsubscribe API doesn't return updated user)
+      const { data: freshUser } = await usersApi.getProfile();
+      setUser(freshUser);
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.profile] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.topics] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.feed] });

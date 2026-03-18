@@ -63,7 +63,7 @@ function AnswerSection({ answer }: { answer: { content: string; generatedAt: str
       <Divider style={styles.answerDivider} />
       <Markdown style={markdownStyles}>{answer.content}</Markdown>
       <Text variant="bodySmall" style={styles.answerDate}>
-        Generated on {formattedDate}
+        Updated on {formattedDate}
       </Text>
     </Surface>
   );

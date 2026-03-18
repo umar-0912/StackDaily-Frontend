@@ -112,4 +112,60 @@ generateTransparentIcon(512, 200, 'android-icon-monochrome.png');
 // 7. Notification icon (96×96, white SD on transparent for Android status bar)
 generateTransparentIcon(96, 38, 'notification-icon.png');
 
-console.log('\n✅ All 7 icons generated successfully in assets/');
+// 8. Play Store Feature Graphic (1024×500)
+// Purple gradient background with "SD" logo on left, app name + tagline on right
+(function generateFeatureGraphic() {
+  const W = 1024, H = 500;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Purple gradient background
+  const gradient = ctx.createLinearGradient(0, 0, W, H);
+  gradient.addColorStop(0, '#5000D4');
+  gradient.addColorStop(1, '#7C3AED');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle decorative circles (top-right, bottom-left)
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = WHITE;
+  ctx.beginPath();
+  ctx.arc(W - 80, -40, 200, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(80, H + 40, 180, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
+
+  // "SD" logo box on the left side
+  const logoSize = 160;
+  const logoX = 180;
+  const logoY = (H - logoSize) / 2;
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  drawRoundedRect(ctx, logoX, logoY, logoSize, logoSize, 32);
+  ctx.fill();
+
+  ctx.fillStyle = WHITE;
+  ctx.font = `bold 72px "Helvetica Neue", "Arial", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SD', logoX + logoSize / 2, logoY + logoSize / 2 + 3);
+
+  // App name
+  ctx.fillStyle = WHITE;
+  ctx.font = `bold 64px "Helvetica Neue", "Arial", sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('StackDaily', 410, H / 2 - 30);
+
+  // Tagline
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.font = `400 26px "Helvetica Neue", "Arial", sans-serif`;
+  ctx.fillText('Learn something new every day', 412, H / 2 + 30);
+
+  const buffer = canvas.toBuffer('image/png');
+  writeFileSync(join(ASSETS_DIR, 'feature-graphic.png'), buffer);
+  console.log(`  ✓ feature-graphic.png (${W}×${H})`);
+})();
+
+console.log('\n✅ All 8 assets generated successfully in assets/');
