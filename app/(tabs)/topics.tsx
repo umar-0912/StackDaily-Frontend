@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,6 +18,7 @@ import {
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTopics } from '../../src/hooks/useTopics';
 import { useUpdateSubscriptions, useUnsubscribeTopic } from '../../src/hooks/useProfile';
 import { useProgress } from '../../src/hooks/useProgress';
@@ -48,6 +49,8 @@ const INITIAL_DIALOG_STATE: UnsubscribeDialogState = {
   percentComplete: 0,
 };
 
+const FREE_TOPIC_LIMIT = 3;
+
 interface CategoryGroup {
   category: string;
   topics: Topic[];
@@ -56,10 +59,23 @@ interface CategoryGroup {
 
 export default function TopicsScreen() {
   const theme = useTheme();
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Debounce search to prevent regrouping/filtering on every keystroke
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
+
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [togglingTopicId, setTogglingTopicId] = useState<string | null>(null);
   const [unsubscribeDialog, setUnsubscribeDialog] = useState<UnsubscribeDialogState>(INITIAL_DIALOG_STATE);
+  const [upgradeDialogVisible, setUpgradeDialogVisible] = useState(false);
+  const router = useRouter();
 
   const { data: topicsData, isLoading, isError, refetch, isRefetching } = useTopics({
     limit: 100,
@@ -120,13 +136,13 @@ export default function TopicsScreen() {
     });
   }, [topicsData?.data, searchQuery, subscribedIds]);
 
-  // Auto-expand all categories when searching
+  // Auto-expand all categories when searching (uses searchInput for instant expand)
   const effectiveExpanded = useMemo(() => {
-    if (searchQuery.trim()) {
+    if (searchInput.trim()) {
       return new Set(groupedTopics.map((g) => g.category));
     }
     return expandedCategories;
-  }, [searchQuery, groupedTopics, expandedCategories]);
+  }, [searchInput, groupedTopics, expandedCategories]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -144,6 +160,16 @@ export default function TopicsScreen() {
 
   const handleSubscribe = useCallback(
     async (topicId: string) => {
+      // Free users: check lifetime topic limit before calling API
+      if (!isProUser) {
+        const historyIds = new Set(user?.topicSubscriptionHistory ?? []);
+        // If topic is already in history, it doesn't count as a new slot
+        if (!historyIds.has(topicId) && historyIds.size >= FREE_TOPIC_LIMIT) {
+          setUpgradeDialogVisible(true);
+          return;
+        }
+      }
+
       setTogglingTopicId(topicId);
       try {
         const currentIds = user?.subscribedTopics.map((t) => t._id) ?? [];
@@ -153,7 +179,7 @@ export default function TopicsScreen() {
         setTogglingTopicId(null);
       }
     },
-    [user?.subscribedTopics, updateSubscriptionsMutation],
+    [user?.subscribedTopics, user?.topicSubscriptionHistory, isProUser, updateSubscriptionsMutation],
   );
 
   const handleUnsubscribe = useCallback(
@@ -276,8 +302,8 @@ export default function TopicsScreen() {
       <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.outlineVariant }]}>
         <Searchbar
           placeholder="Search topics..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
+          onChangeText={setSearchInput}
+          value={searchInput}
           style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant }]}
           inputStyle={styles.searchInput}
           elevation={0}
@@ -301,7 +327,7 @@ export default function TopicsScreen() {
             icon="book-search-outline"
             title="No topics found"
             subtitle={
-              searchQuery
+              searchInput
                 ? 'Try a different search term'
                 : 'No topics available at the moment'
             }
@@ -396,6 +422,38 @@ export default function TopicsScreen() {
             </Button>
           </Dialog.Actions>
         </Dialog>
+
+        <Dialog
+          visible={upgradeDialogVisible}
+          onDismiss={() => setUpgradeDialogVisible(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Icon icon="crown" color="#FF9800" />
+          <Dialog.Title style={styles.dialogTitle}>Topic Limit Reached</Dialog.Title>
+          <Dialog.Content>
+            <Paragraph style={styles.dialogText}>
+              Free plan allows up to {FREE_TOPIC_LIMIT} topics. Upgrade to Pro for unlimited topics and an ad-free experience.
+            </Paragraph>
+          </Dialog.Content>
+          <Dialog.Actions style={styles.upgradeDialogActions}>
+            <Button
+              onPress={() => setUpgradeDialogVisible(false)}
+              textColor={theme.colors.onSurfaceVariant}
+            >
+              Maybe Later
+            </Button>
+            <Button
+              mode="contained"
+              icon="crown"
+              onPress={() => {
+                setUpgradeDialogVisible(false);
+                router.push('/(tabs)/profile');
+              }}
+            >
+              View Plans
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </SafeAreaView>
   );
@@ -484,5 +542,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     gap: 4,
+  },
+  upgradeDialogActions: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    justifyContent: 'flex-end',
+    gap: 8,
   },
 });

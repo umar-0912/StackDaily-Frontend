@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Card, Chip, Button, Text, ProgressBar, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,7 +11,7 @@ interface QuestionCardProps {
   onPress: () => void;
 }
 
-export function QuestionCard({
+export const QuestionCard = memo(function QuestionCard({
   item,
   onPress,
 }: QuestionCardProps) {
@@ -138,7 +139,7 @@ export function QuestionCard({
       </Card>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

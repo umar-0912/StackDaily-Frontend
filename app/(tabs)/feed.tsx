@@ -166,6 +166,10 @@ export default function FeedScreen() {
         }
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={ItemSeparator}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        initialNumToRender={4}
       />
 
     </SafeAreaView>
