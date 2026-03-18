@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StackDaily — Learn Something New Every Day</title>
-    <meta name="description" content="StackDaily delivers daily bite-sized technical questions with detailed answers and MCQs. Master JavaScript, Python, Docker, AWS and 20+ topics in just 5 minutes a day.">
+    <meta name="description" content="StackDaily delivers daily questions with detailed answers & MCQ quizzes for Tech, Government Exams, School (Class 6-12), JEE & NEET. Learn in just 5 minutes a day.">
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -53,7 +53,7 @@
             font-size: 1.25rem;
             color: #a1a1aa;
             margin-bottom: 2.5rem;
-            max-width: 500px;
+            max-width: 550px;
         }
 
         .download-btn {
@@ -151,8 +151,24 @@
         .topics h2 {
             font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             color: #e4e4e7;
+        }
+
+        .topics-subtitle {
+            color: #71717a;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .category-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #a78bfa;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
         }
 
         .topic-tags {
@@ -180,7 +196,7 @@
         /* Pricing Section */
         .pricing {
             padding: 3rem 2rem 5rem;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             text-align: center;
         }
@@ -208,6 +224,21 @@
         .pricing-card.pro {
             border-color: rgba(98, 0, 238, 0.5);
             background: rgba(98, 0, 238, 0.08);
+            position: relative;
+        }
+
+        .pro-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #6200EE;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.25rem 1rem;
+            border-radius: 100px;
+            letter-spacing: 0.5px;
         }
 
         .pricing-card h3 {
@@ -220,13 +251,19 @@
             font-size: 2.5rem;
             font-weight: 800;
             color: #a78bfa;
-            margin-bottom: 1rem;
+            margin-bottom: 0.25rem;
         }
 
         .price span {
             font-size: 1rem;
             font-weight: 400;
             color: #71717a;
+        }
+
+        .price-note {
+            font-size: 0.8rem;
+            color: #71717a;
+            margin-bottom: 1rem;
         }
 
         .pricing-features {
@@ -241,7 +278,7 @@
         }
 
         .pricing-features li::before {
-            content: '✓ ';
+            content: '\2713  ';
             color: #4CAF50;
             font-weight: 700;
         }
@@ -296,12 +333,12 @@
     <section class="hero">
         <img src="icon.png" alt="StackDaily Logo" class="logo">
         <h1>StackDaily</h1>
-        <p class="tagline">Daily bite-sized technical questions with expert-crafted answers. Master 20+ tech topics in just 5 minutes a day.</p>
+        <p class="tagline">Daily questions with detailed answers & quizzes for Tech, Government Exams, School, JEE & NEET. Learn in just 5 minutes a day.</p>
         <a href="#" id="downloadBtn" class="download-btn">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 2H6.477C4.553 2 3 3.553 3 5.477v13.046C3 20.447 4.553 22 6.477 22h11.046C19.447 22 21 20.447 21 18.523V5.477C21 3.553 19.447 2 17.523 2zM12 17.5l-4.5-4.5h3V8h3v5h3L12 17.5z"/></svg>
             Download APK
         </a>
-        <p class="version-badge">v1.0.0 &middot; Android &middot; 68 MB</p>
+        <p class="version-badge">v1.0.0 &middot; Android</p>
     </section>
 
     <!-- Features -->
@@ -311,71 +348,102 @@
             <div class="feature-card">
                 <div class="feature-icon">📚</div>
                 <h3>Daily Questions</h3>
-                <p>Get fresh technical questions every morning for each topic you subscribe to. Never run out of learning material.</p>
+                <p>Get a fresh question every day for each topic you subscribe to. Consistent daily practice beats cramming.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">💡</div>
-                <h3>In-Depth Answers</h3>
-                <p>Every question comes with a detailed explanation covering key concepts, examples, and 3 multiple-choice questions to test your understanding.</p>
+                <h3>Detailed Answers</h3>
+                <p>Every question comes with a step-by-step explanation covering key concepts, examples, formulas & takeaways.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>MCQ Quizzes</h3>
+                <p>4 multiple-choice questions per topic to instantly test your understanding. Re-attempt anytime.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🔥</div>
                 <h3>Streak Tracking</h3>
-                <p>Build a daily learning habit with streak tracking. See your consistency grow with fire badges at 3, 7, 14 and 30+ day milestones.</p>
+                <p>Build daily learning streaks with fire badges. Track your personal best and stay consistent.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🔔</div>
                 <h3>Push Notifications</h3>
-                <p>Get reminded every morning with a push notification so you never miss your daily dose of learning.</p>
+                <p>Daily reminders so you never break your streak. One notification, all your topics covered.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">📱</div>
-                <h3>Micro-Learning</h3>
-                <p>Each question takes just 2-5 minutes to read and understand. Perfect for busy developers on the go.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💳</div>
-                <h3>UPI Auto-Pay</h3>
-                <p>Upgrade to Pro with seamless UPI auto-pay powered by Razorpay. Cancel anytime from the app.</p>
+                <h3>5 Minutes a Day</h3>
+                <p>No hour-long courses. No overwhelming syllabus. Just one question per topic, every day.</p>
             </div>
         </div>
     </section>
 
     <!-- Topics -->
     <section class="topics">
-        <h2>20+ Topics to Master</h2>
+        <h2>50+ Topics Across 6 Categories</h2>
+        <p class="topics-subtitle">New topics added every month</p>
+
+        <p class="category-label">💻 Computer Science & Tech</p>
         <div class="topic-tags">
             <span class="topic-tag">JavaScript</span>
             <span class="topic-tag">TypeScript</span>
             <span class="topic-tag">React</span>
-            <span class="topic-tag">React Native</span>
             <span class="topic-tag">Node.js</span>
             <span class="topic-tag">Python</span>
-            <span class="topic-tag">Docker</span>
-            <span class="topic-tag">AWS</span>
-            <span class="topic-tag">Kubernetes</span>
-            <span class="topic-tag">MongoDB</span>
-            <span class="topic-tag">PostgreSQL</span>
-            <span class="topic-tag">GraphQL</span>
-            <span class="topic-tag">REST APIs</span>
-            <span class="topic-tag">Git</span>
             <span class="topic-tag">System Design</span>
             <span class="topic-tag">Data Structures</span>
-            <span class="topic-tag">Algorithms</span>
-            <span class="topic-tag">CSS</span>
-            <span class="topic-tag">HTML</span>
-            <span class="topic-tag">DevOps</span>
-            <span class="topic-tag">Linux</span>
+            <span class="topic-tag">AWS</span>
+            <span class="topic-tag">Docker</span>
+            <span class="topic-tag">SQL</span>
+            <span class="topic-tag">MySQL</span>
+            <span class="topic-tag">MongoDB</span>
+        </div>
+
+        <p class="category-label">🏛️ Government Exams (Banking PO/SO & Clerk)</p>
+        <div class="topic-tags">
+            <span class="topic-tag">Reasoning (PO/SO)</span>
+            <span class="topic-tag">Reasoning (Clerk)</span>
+            <span class="topic-tag">Quant (PO/SO)</span>
+            <span class="topic-tag">Quant (Clerk)</span>
+            <span class="topic-tag">Static GK</span>
+            <span class="topic-tag">Current Affairs</span>
+            <span class="topic-tag">English Grammar</span>
+        </div>
+
+        <p class="category-label">🎓 School — Class 6 to 12</p>
+        <div class="topic-tags">
+            <span class="topic-tag">Physics</span>
+            <span class="topic-tag">Chemistry</span>
+            <span class="topic-tag">Biology</span>
+            <span class="topic-tag">Maths</span>
+            <span class="topic-tag">Class 6 – 12</span>
+        </div>
+
+        <p class="category-label">🚀 JEE Preparation</p>
+        <div class="topic-tags">
+            <span class="topic-tag">JEE Physics</span>
+            <span class="topic-tag">JEE Chemistry</span>
+            <span class="topic-tag">JEE Maths</span>
+            <span class="topic-tag">Class 11 & 12</span>
+        </div>
+
+        <p class="category-label">🩺 NEET Preparation</p>
+        <div class="topic-tags">
+            <span class="topic-tag">NEET Physics</span>
+            <span class="topic-tag">NEET Chemistry</span>
+            <span class="topic-tag">NEET Biology</span>
+            <span class="topic-tag">Class 11 & 12</span>
         </div>
     </section>
 
     <!-- Pricing -->
     <section class="pricing">
-        <h2>Simple Pricing</h2>
+        <h2>Simple & Affordable Pricing</h2>
         <div class="pricing-cards">
             <div class="pricing-card">
                 <h3>Free</h3>
                 <div class="price">&#8377;0 <span>/ month</span></div>
+                <p class="price-note">&nbsp;</p>
                 <ul class="pricing-features">
                     <li>Up to 3 topics</li>
                     <li>Daily questions & answers</li>
@@ -385,10 +453,13 @@
                 </ul>
             </div>
             <div class="pricing-card pro">
+                <span class="pro-badge">BEST VALUE</span>
                 <h3>Pro</h3>
-                <div class="price">&#8377;30 <span>/ month</span></div>
+                <div class="price">&#8377;15 <span>/ month</span></div>
+                <p class="price-note">Yearly plan &middot; Also available at &#8377;20/mo (6 months) &middot; &#8377;30/mo (monthly)</p>
                 <ul class="pricing-features">
                     <li>Unlimited topics</li>
+                    <li>Ad-free experience</li>
                     <li>Daily questions & answers</li>
                     <li>MCQ quizzes</li>
                     <li>Streak tracking</li>
@@ -404,17 +475,18 @@
         <h2>Privacy Policy</h2>
         <p><strong>Last updated:</strong> March 2026</p>
         <p>StackDaily ("we", "our", "us") respects your privacy. This policy describes how we collect, use, and protect your information when you use the StackDaily mobile application.</p>
-        <p><strong>Information We Collect:</strong> We collect your email address and username during signup for account creation. We store your topic subscriptions, reading history, and streak data to provide personalized learning experiences. We collect Firebase Cloud Messaging tokens to send push notifications. Payment information is processed securely through Razorpay and is never stored on our servers.</p>
-        <p><strong>How We Use Your Information:</strong> To deliver daily technical questions based on your subscribed topics. To track your learning streaks and progress. To send push notifications about new daily content. To process Pro subscription payments via Razorpay.</p>
-        <p><strong>Third-Party Services:</strong> We use MongoDB Atlas for data storage, Firebase Cloud Messaging for push notifications, and Razorpay for payment processing. Each service has its own privacy policy.</p>
+        <p><strong>Information We Collect:</strong> We collect your email address and name during signup for account creation. We store your topic subscriptions, reading history, and streak data to provide personalized learning experiences. We collect Firebase Cloud Messaging tokens to send push notifications. If you sign in with Google, we receive your name and email from your Google account. Payment information is processed securely through Razorpay and is never stored on our servers.</p>
+        <p><strong>How We Use Your Information:</strong> To deliver daily questions based on your subscribed topics. To track your learning streaks and progress. To send push notifications about new daily content. To process Pro subscription payments via Razorpay.</p>
+        <p><strong>Third-Party Services:</strong> We use MongoDB Atlas for data storage, Firebase Cloud Messaging for push notifications, Google AdMob for advertisements (free users only), and Razorpay for payment processing. Each service has its own privacy policy.</p>
+        <p><strong>Advertisements:</strong> Free users see ads powered by Google AdMob. AdMob may collect device identifiers and usage data for ad personalization. Pro subscribers see no ads.</p>
         <p><strong>Data Security:</strong> Passwords are hashed using bcrypt. Authentication uses JWT tokens. All API communications use HTTPS encryption.</p>
         <p><strong>Data Deletion:</strong> You can request account deletion by contacting us. Upon deletion, all your personal data will be permanently removed from our systems.</p>
-        <p><strong>Contact:</strong> For privacy concerns, reach us at <a href="mailto:support@stackdaily.app">support@stackdaily.app</a></p>
+        <p><strong>Contact:</strong> For privacy concerns, reach us at <a href="mailto:stackdaily.app@gmail.com">stackdaily.app@gmail.com</a></p>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2026 StackDaily. Built with ❤️ for developers.</p>
+        <p>&copy; 2026 StackDaily. Built with &#10084;&#65039; for learners everywhere.</p>
         <p style="margin-top: 0.5rem;"><a href="#privacy">Privacy Policy</a></p>
     </footer>
 
