@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account — StackDaily</title>
+    <meta name="description" content="Request deletion of your StackDaily account and all associated data.">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(98, 0, 238, 0.3);
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #e4e4e7;
+        }
+        .subtitle {
+            font-size: 1rem;
+            color: #a1a1aa;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        .info-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+        .info-card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 1rem;
+        }
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info-card li {
+            padding: 0.4rem 0;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+        }
+        .info-card li::before {
+            content: '\2022  ';
+            color: #ef4444;
+            font-weight: 700;
+        }
+        .info-card p {
+            font-size: 0.9rem;
+            color: #a1a1aa;
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+        .delete-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 0.875rem 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .delete-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 24px rgba(239, 68, 68, 0.3);
+        }
+        .back-link {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: #a78bfa;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: #52525b;
+        }
+    </style>
+</head>
+<body>
+    <img src="icon.png" alt="StackDaily Logo" class="logo">
+    <h1>Delete Your Account</h1>
+    <p class="subtitle">We're sorry to see you go. Requesting account deletion will permanently remove all your data from StackDaily.</p>
+
+    <div class="info-card">
+        <h2>What will be deleted:</h2>
+        <ul>
+            <li>Your account and profile information</li>
+            <li>Email address and login credentials</li>
+            <li>Topic subscriptions and preferences</li>
+            <li>Learning progress and streak history</li>
+            <li>Notification history</li>
+            <li>Subscription and payment references</li>
+        </ul>
+        <p>Account deletion is permanent and cannot be undone. Your data will be removed within 7 business days of receiving your request.</p>
+    </div>
+
+    <a href="mailto:stackdaily.app@gmail.com?subject=Account%20Deletion%20Request&body=Hi%20StackDaily%20Team%2C%0A%0AI%20would%20like%20to%20request%20the%20deletion%20of%20my%20account%20and%20all%20associated%20data.%0A%0AMy%20registered%20email%3A%20%5Benter%20your%20email%20here%5D%0A%0AThank%20you." class="delete-btn">
+        &#9993; Request Account Deletion
+    </a>
+
+    <a href="index.html" class="back-link">&larr; Back to StackDaily</a>
+
+    <p class="footer">&copy; 2026 StackDaily. All rights reserved.</p>
+</body>
+</html>
