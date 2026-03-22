@@ -12,7 +12,12 @@
           "package_name": "com.microlearner.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "409646617319-pqldv1erphdeje7kr6bi9komt2mna11h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAN-gK4CSM1gVgxwas0A-TQsU3ZJG34S1M"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "409646617319-pqldv1erphdeje7kr6bi9komt2mna11h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -31,7 +41,12 @@
           "package_name": "com.stackdaily.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "409646617319-pqldv1erphdeje7kr6bi9komt2mna11h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAN-gK4CSM1gVgxwas0A-TQsU3ZJG34S1M"
@@ -39,7 +54,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "409646617319-pqldv1erphdeje7kr6bi9komt2mna11h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

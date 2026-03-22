@@ -5,3 +5,4 @@ export { TopicChip } from './TopicChip';
 export { StreakBadge } from './StreakBadge';
 export { QuestionCard } from './QuestionCard';
 export { AdBanner } from './AdBanner';
+export { NotificationPromptModal } from './NotificationPromptModal';

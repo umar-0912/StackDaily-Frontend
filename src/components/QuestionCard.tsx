@@ -16,10 +16,13 @@ export const QuestionCard = memo(function QuestionCard({
   onPress,
 }: QuestionCardProps) {
   const theme = useTheme();
-  const difficultyColor =
-    DIFFICULTY_COLORS[item.question.difficulty] ?? theme.colors.outline;
-  const difficultyLabel =
-    DIFFICULTY_LABELS[item.question.difficulty] ?? item.question.difficulty;
+  const isVocabulary = item.topic.contentType === 'vocabulary';
+  const difficultyColor = isVocabulary
+    ? '#6200EE'
+    : (DIFFICULTY_COLORS[item.question.difficulty] ?? theme.colors.outline);
+  const difficultyLabel = isVocabulary
+    ? '15 Words'
+    : (DIFFICULTY_LABELS[item.question.difficulty] ?? item.question.difficulty);
   const topicIcon = getTopicIcon(item.topic.icon ?? undefined);
 
   return (
@@ -80,7 +83,7 @@ export const QuestionCard = memo(function QuestionCard({
             {item.question.text}
           </Text>
 
-          {item.question.tags.length > 0 ? (
+          {!isVocabulary && item.question.tags.length > 0 ? (
             <View style={styles.tagsRow}>
               {item.question.tags.slice(0, 3).map((tag) => (
                 <Chip
@@ -104,7 +107,7 @@ export const QuestionCard = memo(function QuestionCard({
             <View style={styles.progressSection}>
               <View style={styles.progressLabelRow}>
                 <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Question {item.progress.questionsAnswered + 1} of {item.progress.totalQuestions}
+                  {isVocabulary ? 'Day' : 'Question'} {item.progress.questionsAnswered + 1} of {item.progress.totalQuestions}
                 </Text>
                 <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
                   {item.progress.totalQuestions > 0
@@ -129,11 +132,11 @@ export const QuestionCard = memo(function QuestionCard({
           <Button
             mode="text"
             compact
-            icon={item.progress?.isRead ? 'eye-outline' : 'arrow-right'}
+            icon={item.progress?.isRead ? 'eye-outline' : (isVocabulary ? 'book-open-variant' : 'arrow-right')}
             onPress={onPress}
             contentStyle={styles.viewButtonContent}
           >
-            {item.progress?.isRead ? 'View Answer' : 'Attempt Quiz'}
+            {item.progress?.isRead ? 'View Answer' : (isVocabulary ? 'Study Words' : 'Attempt Quiz')}
           </Button>
         </Card.Actions>
       </Card>

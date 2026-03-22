@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,8 +15,15 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFeed } from '../../src/hooks/useFeed';
 import { useAuthStore } from '../../src/stores/authStore';
-import { QuestionCard, AdBanner } from '../../src/components';
+import { QuestionCard, AdBanner, NotificationPromptModal } from '../../src/components';
 import { AD_UNIT_IDS } from '../../src/utils/adConfig';
+import {
+  hasSeenNotificationPrompt,
+  hasNotificationPermission,
+  markNotificationPromptSeen,
+  registerForPushNotifications,
+  registerTokenWithBackend,
+} from '../../src/utils/notifications';
 import type { DailyFeedItem } from '../../src/types';
 
 const ItemSeparator = () => <View style={styles.separator} />;
@@ -101,6 +108,30 @@ function FeedAdHeader() {
 export default function FeedScreen() {
   const router = useRouter();
   const { data: feedItems, isLoading, isError, refetch, isRefetching } = useFeed();
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+
+  // Check if we should show the notification permission prompt
+  useEffect(() => {
+    async function checkNotifPrompt() {
+      const alreadySeen = await hasSeenNotificationPrompt();
+      if (alreadySeen) return;
+
+      const alreadyGranted = await hasNotificationPermission();
+      if (alreadyGranted) {
+        // Permission already granted (e.g., from onboarding), ensure token is registered
+        await markNotificationPromptSeen();
+        const token = await registerForPushNotifications();
+        if (token) await registerTokenWithBackend(token);
+        return;
+      }
+
+      // Show prompt after a short delay so the feed loads first
+      const timer = setTimeout(() => setShowNotifPrompt(true), 1000);
+      return () => clearTimeout(timer);
+    }
+
+    checkNotifPrompt();
+  }, []);
   const handlePressItem = useCallback(
     (item: DailyFeedItem) => {
       router.push({
@@ -172,6 +203,10 @@ export default function FeedScreen() {
         initialNumToRender={4}
       />
 
+      <NotificationPromptModal
+        visible={showNotifPrompt}
+        onDismiss={() => setShowNotifPrompt(false)}
+      />
     </SafeAreaView>
   );
 }

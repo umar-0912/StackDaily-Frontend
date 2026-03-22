@@ -1,27 +1,13 @@
-import { getLocales } from 'expo-localization';
-
 export type PaymentProviderType = 'razorpay' | 'stripe';
 
 /**
- * Detect payment provider based on device locale region.
- * India (region = IN) -> Razorpay, everywhere else -> Stripe.
- * Uses expo-localization for reliable cross-platform locale detection.
+ * Returns Razorpay as the sole payment provider.
+ * India-only launch — Stripe support removed for now.
  */
 export function getPaymentProvider(): PaymentProviderType {
-  try {
-    const locales = getLocales();
-    const region = locales[0]?.regionCode?.toUpperCase() ?? '';
-
-    if (region === 'IN') {
-      return 'razorpay';
-    }
-  } catch {
-    // Fallback: if locale detection fails, default to stripe (international)
-  }
-
-  return 'stripe';
+  return 'razorpay';
 }
 
-export function getCurrencySymbol(provider: PaymentProviderType): string {
-  return provider === 'razorpay' ? '\u20B9' : '$';
+export function getCurrencySymbol(_provider?: PaymentProviderType): string {
+  return '\u20B9';
 }

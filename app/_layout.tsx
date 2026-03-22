@@ -10,8 +10,6 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { useAuthStore } from '../src/stores/authStore';
 import {
-  registerForPushNotifications,
-  registerTokenWithBackend,
   addNotificationReceivedListener,
   addNotificationResponseListener,
 } from '../src/utils/notifications';
@@ -79,9 +77,20 @@ export default function RootLayout() {
     restoreSession();
   }, [restoreSession]);
 
-  // Auth state listener: redirect based on auth state
+  // Track whether initial routing has been handled by index.tsx
+  const hasInitialized = useRef(false);
+
+  // Auth state listener: redirect on reactive auth changes (logout, token expiry)
+  // Skips first run to let index.tsx handle initial routing (prevents race with onboarding check)
   useEffect(() => {
     if (isRestoring) return;
+
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return; // Let index.tsx handle first routing decision
+    }
+
+    // Handle reactive auth changes (mid-session logout, verification needed)
     if (requiresVerification) {
       router.replace('/(auth)/verify-email');
     } else if (!isAuthenticated) {
@@ -89,20 +98,6 @@ export default function RootLayout() {
       router.replace('/(auth)/login');
     }
   }, [isAuthenticated, isRestoring, requiresVerification]);
-
-  // Register for push notifications after authentication
-  useEffect(() => {
-    if (!isAuthenticated || isRestoring) return;
-
-    const setupPushNotifications = async () => {
-      const token = await registerForPushNotifications();
-      if (token) {
-        await registerTokenWithBackend(token);
-      }
-    };
-
-    setupPushNotifications();
-  }, [isAuthenticated, isRestoring]);
 
   // Set up notification listeners
   useEffect(() => {

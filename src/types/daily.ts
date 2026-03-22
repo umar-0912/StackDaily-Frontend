@@ -3,6 +3,7 @@ export interface FeedTopic {
   name: string;
   slug: string;
   icon?: string | null;
+  contentType?: 'question' | 'vocabulary';
 }
 
 export interface FeedQuestion {

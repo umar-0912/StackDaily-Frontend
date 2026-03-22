@@ -43,6 +43,8 @@ export function getDisplayCategory(dbCategory: string): string {
 export const CATEGORY_DISPLAY_ORDER: string[] = [
   // Tech (merged under one folder)
   MERGED_TECH_DISPLAY_NAME,
+  // English
+  'English',
   // Government exams
   'Government Exams',
   // Competitive exams
@@ -67,6 +69,7 @@ export const CATEGORY_DISPLAY_ORDER: string[] = [
  */
 export const CATEGORY_ICONS: Record<string, string> = {
   [MERGED_TECH_DISPLAY_NAME]: 'laptop',
+  English: 'alphabetical-variant',
   'Government Exams': 'book-education-outline',
   'JEE - Class 11': 'target',
   'JEE - Class 12': 'target',

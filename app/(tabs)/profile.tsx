@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -32,8 +32,7 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile, useUpdateProfile, useSubscriptionInfo } from '../../src/hooks/useProfile';
 import { useSubscribe, useCancelSubscription } from '../../src/hooks/usePayments';
 import { useProgress } from '../../src/hooks/useProgress';
-import { QUERY_KEYS, SUBSCRIPTION_TIERS, STRIPE_SUBSCRIPTION_TIERS, SUBSCRIPTION_TIER_ORDER } from '../../src/utils/constants';
-import { getPaymentProvider, getCurrencySymbol } from '../../src/utils/paymentProvider';
+import { QUERY_KEYS, SUBSCRIPTION_TIERS, SUBSCRIPTION_TIER_ORDER } from '../../src/utils/constants';
 import { LoadingScreen, ErrorScreen, StreakBadge, TopicChip } from '../../src/components';
 import { SubscriptionPlan, SubscriptionStatus, SubscriptionTier } from '../../src/types';
 
@@ -86,9 +85,8 @@ export default function ProfileScreen() {
   const subscribeMutation = useSubscribe();
   const cancelSubscriptionMutation = useCancelSubscription();
 
-  const paymentProvider = useMemo(() => getPaymentProvider(), []);
-  const activeTiers = paymentProvider === 'stripe' ? STRIPE_SUBSCRIPTION_TIERS : SUBSCRIPTION_TIERS;
-  const currencySymbol = getCurrencySymbol(paymentProvider);
+  const activeTiers = SUBSCRIPTION_TIERS;
+  const currencySymbol = '\u20B9';
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);

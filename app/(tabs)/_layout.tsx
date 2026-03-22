@@ -2,6 +2,7 @@ import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 
 /** Streak shown in the purple header bar of the Feed tab */
@@ -59,6 +60,7 @@ const headerStyles = StyleSheet.create({
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -69,8 +71,8 @@ export default function TabsLayout() {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.surfaceVariant,
           elevation: 8,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
           paddingTop: 4,
         },
         tabBarLabelStyle: {

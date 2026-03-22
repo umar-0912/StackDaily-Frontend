@@ -44,7 +44,7 @@ const markdownStyles = {
   blockquote: { backgroundColor: '#F5F5F5', borderLeftWidth: 3, borderLeftColor: '#03DAC6', paddingLeft: 12, paddingVertical: 8, marginVertical: 8 },
 };
 
-function AnswerSection({ answer }: { answer: { content: string; generatedAt: string } }) {
+function AnswerSection({ answer, isVocabulary }: { answer: { content: string; generatedAt: string }; isVocabulary?: boolean }) {
   const formattedDate = new Date(answer.generatedAt).toLocaleDateString(
     'en-US',
     { year: 'numeric', month: 'short', day: 'numeric' },
@@ -54,9 +54,13 @@ function AnswerSection({ answer }: { answer: { content: string; generatedAt: str
     <Surface style={styles.answerSection} elevation={1}>
       <View style={styles.answerHeader}>
         <View style={styles.answerHeaderLeft}>
-          <MaterialCommunityIcons name="lightbulb-outline" size={22} color="#6200EE" />
+          <MaterialCommunityIcons
+            name={isVocabulary ? 'book-open-variant' : 'lightbulb-outline'}
+            size={22}
+            color="#6200EE"
+          />
           <Text variant="titleMedium" style={styles.answerTitle}>
-            Answer
+            {isVocabulary ? 'Word List' : 'Answer'}
           </Text>
         </View>
       </View>
@@ -308,11 +312,13 @@ export default function QuestionDetailScreen() {
 
   if (!feedItem) return null;
 
-  const difficultyColor =
-    DIFFICULTY_COLORS[feedItem.question.difficulty] ?? '#999';
-  const difficultyLabel =
-    DIFFICULTY_LABELS[feedItem.question.difficulty] ??
-    feedItem.question.difficulty;
+  const isVocabulary = feedItem.topic.contentType === 'vocabulary';
+  const difficultyColor = isVocabulary
+    ? '#6200EE'
+    : (DIFFICULTY_COLORS[feedItem.question.difficulty] ?? '#999');
+  const difficultyLabel = isVocabulary
+    ? '15 Words'
+    : (DIFFICULTY_LABELS[feedItem.question.difficulty] ?? feedItem.question.difficulty);
   const topicIcon = getTopicIcon(feedItem.topic.icon ?? undefined);
   const hasMcqs = feedItem.answer.mcqs && feedItem.answer.mcqs.length > 0;
 
@@ -366,25 +372,43 @@ export default function QuestionDetailScreen() {
             </View>
           </Surface>
 
-          {/* Question */}
-          <Surface style={styles.questionCard} elevation={1}>
-            <View style={styles.questionIconRow}>
-              <MaterialCommunityIcons
-                name="help-circle-outline"
-                size={22}
-                color="#6200EE"
-              />
-              <Text variant="labelLarge" style={styles.questionLabel}>
-                Question
+          {/* Question (hidden for vocabulary) */}
+          {isVocabulary ? (
+            <Surface style={styles.questionCard} elevation={1}>
+              <View style={styles.questionIconRow}>
+                <MaterialCommunityIcons
+                  name="book-open-variant"
+                  size={22}
+                  color="#6200EE"
+                />
+                <Text variant="labelLarge" style={styles.questionLabel}>
+                  Today's Vocabulary
+                </Text>
+              </View>
+              <Text variant="bodyMedium" style={{ color: '#666' }}>
+                15 advanced words to learn today
               </Text>
-            </View>
-            <Text variant="headlineSmall" style={styles.questionText}>
-              {feedItem.question.text}
-            </Text>
-          </Surface>
+            </Surface>
+          ) : (
+            <Surface style={styles.questionCard} elevation={1}>
+              <View style={styles.questionIconRow}>
+                <MaterialCommunityIcons
+                  name="help-circle-outline"
+                  size={22}
+                  color="#6200EE"
+                />
+                <Text variant="labelLarge" style={styles.questionLabel}>
+                  Question
+                </Text>
+              </View>
+              <Text variant="headlineSmall" style={styles.questionText}>
+                {feedItem.question.text}
+              </Text>
+            </Surface>
+          )}
 
-          {/* Tags */}
-          {feedItem.question.tags.length > 0 ? (
+          {/* Tags (hidden for vocabulary) */}
+          {!isVocabulary && feedItem.question.tags.length > 0 ? (
             <View style={styles.tagsSection}>
               <Text variant="labelMedium" style={styles.tagsLabel}>
                 Tags
@@ -406,7 +430,7 @@ export default function QuestionDetailScreen() {
           ) : null}
 
           {/* AI Answer (always visible, markdown rendered) */}
-          <AnswerSection answer={feedItem.answer} />
+          <AnswerSection answer={feedItem.answer} isVocabulary={isVocabulary} />
 
           {/* MCQ Quiz or fallback "I've Read This" button */}
           {hasMcqs ? (

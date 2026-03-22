@@ -1,7 +1,10 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usersApi } from '../api/users';
+
+const NOTIFICATION_PROMPT_KEY = 'hasSeenNotificationPrompt';
 
 // Configure notification handler (how notifications appear when app is in foreground)
 Notifications.setNotificationHandler({
@@ -75,4 +78,31 @@ export function addNotificationResponseListener(
   callback: (response: Notifications.NotificationResponse) => void,
 ) {
   return Notifications.addNotificationResponseReceivedListener(callback);
+}
+
+// Notification prompt tracking (post-login modal)
+export async function hasSeenNotificationPrompt(): Promise<boolean> {
+  try {
+    const value = await AsyncStorage.getItem(NOTIFICATION_PROMPT_KEY);
+    return value === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export async function markNotificationPromptSeen(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(NOTIFICATION_PROMPT_KEY, 'true');
+  } catch {
+    console.warn('Failed to persist notification prompt state');
+  }
+}
+
+export async function hasNotificationPermission(): Promise<boolean> {
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    return status === 'granted';
+  } catch {
+    return false;
+  }
 }
