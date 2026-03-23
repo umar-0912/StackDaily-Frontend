@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { Slot, useRouter } from 'expo-router';
-import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, focusManager, type DefaultOptions } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,14 +16,29 @@ import {
 } from '../src/utils/notifications';
 import { GOOGLE_WEB_CLIENT_ID, STRIPE_PUBLISHABLE_KEY } from '../src/utils/constants';
 
+const isNetworkError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object' || !('isAxiosError' in error)) return false;
+  const axiosError = error as AxiosError;
+  return !axiosError.response || axiosError.code === 'ECONNABORTED' || axiosError.code === 'ERR_NETWORK';
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
+      retry: (failureCount, error) => {
+        if (failureCount >= 2) return false;
+        return isNetworkError(error);
+      },
       refetchOnWindowFocus: false,
     },
-  },
+    mutations: {
+      retry: (failureCount, error) => {
+        if (failureCount >= 2) return false;
+        return isNetworkError(error);
+      },
+    },
+  } satisfies DefaultOptions,
 });
 
 const theme = {

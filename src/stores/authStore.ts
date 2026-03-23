@@ -39,7 +39,18 @@ interface AuthState {
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof AxiosError) {
-    const data = error.response?.data as ApiErrorResponse | undefined;
+    // Network-level failures (no response from server)
+    if (!error.response) {
+      if (error.code === 'ECONNABORTED') {
+        return 'Connection timed out. Please check your internet and try again.';
+      }
+      if (error.code === 'ERR_NETWORK') {
+        return 'Unable to connect to the server. Please check your internet connection and try again.';
+      }
+      return 'Unable to reach the server. Please try again.';
+    }
+    // Server responded with an error
+    const data = error.response.data as ApiErrorResponse | undefined;
     if (data?.message) {
       return data.message;
     }
@@ -51,6 +62,30 @@ const getErrorMessage = (error: unknown): string => {
     return error.message;
   }
   return 'An unexpected error occurred';
+};
+
+/**
+ * Retries a network request with exponential backoff.
+ * Only retries on network errors and timeouts, NOT on server errors (4xx/5xx).
+ */
+const retryableRequest = async <T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+): Promise<T> => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isRetryable =
+        error instanceof AxiosError &&
+        (!error.response ||
+          error.code === 'ECONNABORTED' ||
+          error.code === 'ERR_NETWORK');
+      if (!isRetryable || attempt === maxRetries - 1) throw error;
+      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
+  }
+  throw new Error('Max retries exceeded');
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -67,7 +102,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isSubmitting: true, error: null });
     try {
-      const { data } = await authApi.login({ email, password });
+      const { data } = await retryableRequest(() =>
+        authApi.login({ email, password }),
+      );
       await tokenStorage.setTokens(data.accessToken, data.refreshToken);
 
       if (!data.user.isEmailVerified) {
@@ -102,10 +139,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signup: async (data: SignupRequest) => {
+  signup: async (signupData: SignupRequest) => {
     set({ isSubmitting: true, error: null });
     try {
-      const { data: responseData } = await authApi.signup(data);
+      const { data: responseData } = await retryableRequest(() =>
+        authApi.signup(signupData),
+      );
       await tokenStorage.setTokens(
         responseData.accessToken,
         responseData.refreshToken,
@@ -164,7 +203,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Send ID token to backend for verification + login/signup
-      const { data } = await authApi.googleSignIn({ idToken });
+      const { data } = await retryableRequest(() =>
+        authApi.googleSignIn({ idToken }),
+      );
       await tokenStorage.setTokens(data.accessToken, data.refreshToken);
 
       // Google users are always verified — go straight to authenticated
@@ -224,8 +265,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      // Try to fetch the user profile with the stored token
-      const { data: user } = await usersApi.getProfile();
+      // Try to fetch the user profile with the stored token.
+      // Use only 2 attempts (not 3) to keep the splash screen snappy.
+      const { data: user } = await retryableRequest(
+        () => usersApi.getProfile(),
+        2,
+      );
 
       if (!user.isEmailVerified) {
         set({

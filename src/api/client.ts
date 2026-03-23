@@ -30,6 +30,11 @@ export const apiClient = axios.create({
   },
 });
 
+// Fire-and-forget warmup request to prime DNS cache, TCP connection pool,
+// and TLS session on app start. This prevents first-launch failures on Android
+// where the network stack is cold.
+apiClient.get('/health', { timeout: 10000 }).catch(() => {});
+
 // Request interceptor: attach access token
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
